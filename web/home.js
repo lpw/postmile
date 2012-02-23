@@ -23,7 +23,12 @@ exports.get = function (req, res, next) {
             }
         };
 
-        res.api.view = { template: 'home', locals: locals };
+		// Let them go in as guest,  -Lance.
+
+        // res.api.view = { template: 'home', locals: locals };
+
+		res.api.redirect = '/auth/guest';
+	
         next();
     }
 };

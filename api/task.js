@@ -24,7 +24,8 @@ exports.type.post = {
     title:          { type: 'string' },
     status:         { type: 'enum',                    values: { open: 1, pending: 2, close: 3 } },
     participants:   { type: 'id',                      array: true, empty: true },
-    origin:         { type: 'object',   set: false,    hide: true }
+    origin:         { type: 'object',   set: false,    hide: true },
+    priority:          { type: 'number' }	// -Lance.
 };
 
 exports.type.put = Hapi.Utils.clone(exports.type.post);
@@ -82,7 +83,8 @@ exports.list = function (request, reply) {
 
                             id: tasks[i]._id,
                             title: tasks[i].title,
-                            status: tasks[i].status
+                            status: tasks[i].status,
+                            priority: tasks[i].priority	// -Lance.
                         };
 
                         if (tasks[i].participants) {

@@ -23,6 +23,7 @@ exports.endpoints = [
 
     { method: 'GET',    path: '/login',                     handler: Login.login },
     { method: 'GET',    path: '/logout',                    handler: Login.logout },
+    { method: 'GET',    path: '/relogin',                    handler: Login.relogin },	// for guest,  -Lance.
     { method: 'GET',    path: '/auth/:network',             handler: Login.auth },
     { method: 'POST',   path: '/auth/:network',             handler: Login.auth },
     { method: 'POST',   path: '/account/unlink',            handler: Login.unlink,          authentication: 'session' },

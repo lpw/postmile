@@ -202,6 +202,25 @@ exports.token = function (request, reply) {
 
                         break;
 
+                    case 'http://ns.postmile.net/guest':
+
+                            User.validate(req.body.x_user_id, 'guest', function (user, err) {
+
+                                if (user) {
+
+                                    getOrCreate(user, client, { type: 'guest' } );
+                                }
+                                else {
+
+                                    // Unregistered Facebook account
+                                    // res.api.error = Err.oauth('invalid_grant', 'Unknown Guest account: ' + req.body.x_user_id);
+                                    // next();
+									reply(Hapi.Error.oauth('invalid_grant', 'Unknown Guest account: ' + request.payload.x_user_id));
+                                }
+                            });
+
+                        break;
+
                     case 'http://ns.postmile.net/yahoo':
 
                         // Check if client has 'login' scope

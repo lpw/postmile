@@ -54,7 +54,12 @@ exports.type.put = {
 
 exports.type.link = {
 
-    id:         { type: 'string',       required: true }
+    id:         { type: 'string',       required: true },
+	// added for converting guest profile to real network profile upon login, -Lance.
+    email:         { type: 'string' },
+    name:         { type: 'string' },
+    network:         { type: 'string' },
+    username:         { type: 'string' },
 };
 
 exports.type.reminder = {
@@ -669,7 +674,7 @@ exports.put = function (request, reply) {
 
                 if (err === null) {
 
-                    if (count === 0) {
+                    if (true || count === 0) {	// lax now that we're allowing guests,  -Lance.
 
                         validateNetwork();
                     }
@@ -706,7 +711,8 @@ exports.put = function (request, reply) {
 
                     if (network !== 'twitter' &&
                         network !== 'facebook' &&
-                        network !== 'yahoo') {
+                        network !== 'yahoo' &&
+                        network !== 'guest') {
 
                         isValid = false;
                         error = 'Unknown network';
@@ -772,7 +778,29 @@ exports.put = function (request, reply) {
                 }
                 else {
 
-                    reply(typeof err === 'string' ? Hapi.Error.badRequest('Invalid username: ' + err) : err);
+                    // guest again,  -Lance.
+					// res.api.error = (typeof err === 'string' ? Err.badRequest('Invalid username: ' + err) : err);
+                    // next();
+
+					// just retry once, don't risk infinite recurssion
+					// req.body.username += Math.floor( Math.random() * 1001 ) ;
+					request.payload.username += Math.floor( Math.random() * 1001 ) ;
+					internals.checkUsername(request.payload.username, function (lookupUser, err) {
+
+		                if (err &&
+		                    // err.code === Err.notFound().code) 
+		                    err.code === Hapi.Error.notFound().code) {
+
+		                    createAccount();
+		                }
+		                else {
+
+		                    // res.api.error = (typeof err === 'string' ? Err.badRequest('Invalid username: ' + err) : err);
+		                    // next();
+							reply(typeof err === 'string' ? Hapi.Error.badRequest('Invalid username: ' + err) : err);
+		                }
+		            });
+
                 }
             });
         }
@@ -918,7 +946,10 @@ exports.link = function (request, reply) {
                     // Check if already assigned to someone else
 
                     var criteria = {};
-                    criteria[request.params.network] = request.params.id;
+                    // todo: ensure this was wrong (or perhaps url should have acct id instead of prof id),  -Lance.  criteria[req.params.network] = req.params.id;
+                    // criteria[req.params.network] = req.body.id;
+					// criteria[request.params.network] = request.body.id;
+					criteria[request.params.network] = request.payload.id;
 
                     Db.count('user', criteria, function (count, err) {
 
@@ -928,6 +959,14 @@ exports.link = function (request, reply) {
 
                                 var changes = { $set: {} };
                                 changes.$set[request.params.network] = request.payload.id;
+								// now with additional params since guest may not have had them before,  -Lance.
+                                // changes.$set['email'] = req.body.email;
+                                // changes.$set['name'] = req.body.name;
+                                // changes.$set['username'] = req.body.username;
+								changes.$set[ 'email' ] = request.payload.email ;
+								changes.$set[ 'name' ] = request.payload.name ;
+								changes.$set[ 'username' ] = request.payload.username ;
+								// not network, not id
 
                                 Db.update('user', user._id, changes, function (err) {
 
@@ -943,8 +982,106 @@ exports.link = function (request, reply) {
                                 });
                             }
                             else {
+								
+								// Instead of rejecting the request, merge the guest docs into the docs if tge previously linked account
+		                        // reply(Hapi.Error.badRequest('Network id already linked to another user'));
+								
+								// the approach of merging accounts could create too many queries and updates...
+								// may make sense to merge the new account into the original account
+								
+								// presume that all these accounts are the same user and should be merged instead of errror
+						
+								// could make this more efficient by refactoring, but trying to preserve original for a bit:								
+                                // res.api.error = Err.badRequest('Network id already linked to another user');
+                                // next();
 
-                                reply(Hapi.Error.badRequest('Network id already linked to another user'));
+								// still create account - will be the surviving account (or could use musers[0])
+								// todo: perhaps combine with above, encapsulate some into separate method
+                                var changes = { $set: {} };
+                                changes.$set[request.params.network] = request.payload.id;
+								// now with additional params since guest may not have had them before,  -Lance.
+                                // changes.$set['email'] = req.body.email;
+                                // changes.$set['name'] = req.body.name;
+                                // changes.$set['username'] = req.body.username;
+								changes.$set[ 'email' ] = request.payload.email ;
+								changes.$set[ 'name' ] = request.payload.name ;
+								changes.$set[ 'username' ] = request.payload.username ;
+								// not network, not id
+
+                                Db.update('user', user._id, changes, function (err) {
+
+                                    if (err === null) {
+
+										var survivingId = user._id ;
+
+										console.log( 'querying users that match ' + user._id ) ;
+
+                    					Db.query('user', criteria, function (musers, err) {
+											
+											console.log( 'got ' + musers.length + ' users to match ' + user._id ) ;
+											for( var tmi = musers.length-1 ; tmi >= 0 ; tmi-- ) {
+												console.log( '	 ' + tmi + ': ' + musers[tmi]._id ) ;
+											}
+											
+											// count backwards to be sure we don't get bit by array compression for( var mi = 0 ; mi < count ; mi++ )
+											for( var mi = musers.length-1 ; mi >= 0 ; mi-- ) {
+												
+												var duser = musers[mi] ;
+												
+												console.log( 'processing ' + mi + ' user ' + duser._id + ' and comoparing to survivingId ' + survivingId ) ;
+
+												if( duser._id !== survivingId ) {	// don't delete last one merged into	
+
+													// first, before deletes and updates, merge docs - may be many querys and updates 
+													// any other collections have embedded users besides projects?
+																
+													// this works better than querying through projects for participant.id's and then using that project id in the updateCreiteria field
+													// not sure what that second id arg does in updateCriteria as it seemed to only work on the first one
+													
+						                            var projectCriteria = { 'participants.id': duser._id };
+						                            var projectChange = { $set: { 'participants.$.id': survivingId } };
+						                            Db.updateCriteria('project', null, projectCriteria, projectChange, function (err) {
+														if (err === null) {
+									                        console.log( 'replaced participants id in project ' ) ;
+									                    } else {
+									                        console.log( 'error replacing participants id in project ' ) ;
+									                    }
+									                });
+
+													// our could pull outside of loop, and before update, delete w critera network:id
+													console.log( 'Lance deleting user ' + duser._id + ' aka ' + duser.username ) ;
+													Db.remove('user', duser._id, function (err) {
+														// not that since these callbacks are async, the clousure var duser may be iterated
+	                                    				if (err === null) {
+															console.log( 'Lance deleted user ' + duser._id) ;
+														} else {
+															console.log( 'Lance error deleting user ' + duser._id + ' ' + err ) ;
+														}
+													});
+											
+												}
+																																				
+											}
+														
+											// todo: only do this upon successful merge and delete?								
+	                                        // Stream.update({ object: 'profile', user: user._id }, req);
+	                                        // res.api.result = { status: 'ok' };
+	                                        // next();
+    	                                    Stream.update({ object: 'profile', user: user._id }, request);
+	                                        reply({ status: 'ok' });
+											
+										});
+								
+                                    }
+                                    else {
+
+                                        // res.api.error = err;
+                                        // next();
+										reply(err);
+
+                                    }
+                                });
+
                             }
                         }
                         else {
@@ -1109,7 +1246,8 @@ exports.lookup = function (request, reply) {
     }
     else if (request.params.type === 'facebook' ||
              request.params.type === 'twitter' ||
-             request.params.type === 'yahoo') {
+             request.params.type === 'yahoo') ||
+             request.params.type === 'guest') {
 
         var criteria = {};
         criteria[request.params.type] = request.params.id;

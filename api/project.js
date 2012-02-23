@@ -35,7 +35,8 @@ exports.type.post = {
     date:           { type: 'date',     empty: true },
     time:           { type: 'time',     empty: true },
     place:          { type: 'string',   empty: true },
-    participants:   { type: 'object',                   set: false, array: true }
+    participants:   { type: 'object',                   set: false, array: true },
+    priority:          { type: 'number' }	// -Lance.
 };
 
 exports.type.put = Hapi.Utils.clone(exports.type.post);
@@ -98,7 +99,11 @@ exports.list = function (request, reply) {
                     }
                 }
 
-                var item = { id: projects[i]._id, title: projects[i].title };
+                var item = {
+					id: projects[i]._id,
+					title: projects[i].title,
+					priority: projects[i].priority	// -Lance.
+				};
 
                 if (isPending) {
 

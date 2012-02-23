@@ -139,6 +139,14 @@ exports.logout = function (res, next) {
     next();
 };
 
+// for guest,  -Lance.
+exports.relogin = function (res, next) {
+    exports.clear(res);
+    // with guest/autologin hack, avoid automatic logging back in w guest acct, res.api.redirect = '/';
+    res.api.redirect = '/auth/facebook' ;
+    res.api.result = 'You are being redirected...';
+    next();
+};
 
 exports.set = function (res, token, callback) {
 

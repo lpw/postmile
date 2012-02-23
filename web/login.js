@@ -73,6 +73,14 @@ exports.logout = function (req, res, next) {
 };
 
 
+// Relogin (for guest),  -Lance.
+
+exports.relogin = function (req, res, next) {
+
+    Session.relogin(res, next);
+};
+
+
 // Third party authentication (OAuth 1.0/2.0 callback URI)
 
 exports.auth = function (req, res, next) {
@@ -81,7 +89,7 @@ exports.auth = function (req, res, next) {
 
         // Preserve parameters for OAuth authorization callback
 
-        if (req.query.x_next &&
+        if (req && req.query && req.query.x_next &&	// -Lance.
             req.query.x_next.charAt(0) === '/') {        // Prevent being used an open redirector
 
             res.api.jar.auth = { next: req.query.x_next };
@@ -92,6 +100,7 @@ exports.auth = function (req, res, next) {
             case 'twitter': twitter(); break;
             case 'facebook': facebook(); break;
             case 'yahoo': yahoo(); break;
+            case 'guest': guest(); break;	//  -Lance.
 
             default:
 
@@ -209,6 +218,28 @@ exports.auth = function (req, res, next) {
         }
     }
 
+	// -Lance.
+	function guest() {
+
+		var d = new Date() ;
+		var t = '' + d.getTime() ;
+		var n = 'Guest ' + t ;
+		var u = 'guest' + t ;
+
+                                        var account = {
+
+                                            network: 'guest',
+                                            id: t,
+                                            name: n,
+                                            username: u,
+                                            email: u + '@lwelsh.com'
+
+                                        };
+
+                                        finalizedLogin(account);
+
+	}
+
     function facebook() {
 
         if (req.query.code === undefined) {
@@ -271,8 +302,8 @@ exports.auth = function (req, res, next) {
 
                                             network: 'facebook',
                                             id: data.id,
-                                            name: data.name || '',
-                                            username: data.username || '',
+                                            name: data.name || 'Guest',	// || ''  -Lance.
+                                            username: data.username || 'guest',	// || ''  -Lance.
                                             email: (data.email && data.email.match(/proxymail\.facebook\.com$/) === null ? data.email : '')
                                         };
 
@@ -499,9 +530,17 @@ exports.auth = function (req, res, next) {
 
             // Link
 
-            Api.clientCall('POST', '/user/' + req.api.profile.id + '/link/' + account.network, { id: account.id }, function (result, err, code) {
+            Api.clientCall('POST', '/user/' + req.api.profile.id + '/link/' + account.network, { 
+					id: account.id 
+					// we have more info now, that we didn't have before as guest, that we should now pass on.  -Lance.
+					, email: account.email
+					, name: account.name
+					, network: account.network
+					, username: account.username
+				}, function (result, err, code) {
 
-                res.api.redirect = '/account/linked';
+                // res.api.redirect = '/account/linked';	// -Lance.
+				res.api.redirect = '/view';	// reload view
                 next();
             });
         }
@@ -593,6 +632,24 @@ exports.loginCall = function (tokenRequest, res, next, destination, account) {
                                 res.api.jar.message = 'Email address verified';
                                 destination = '/account/emails';
                                 break;
+
+                            case 'guest':
+
+								// -Lance.
+								// todo: change this back to no restriction = null and do set destination back to /tos as it shoud now pass?
+								
+                                // res.api.jar.message = 'guest';
+								restriction = null ;	// override the api/db 
+
+								// Api.clientCall('POST', '/user/' + tokenRequest.x_user_id + '/tos/' + Tos.currentTOS, '', function (result, err, code) {
+									// // Refresh token?  Session.refresh...?
+									// console.log( 'Lance: iplicited accepted TOS for guest user with ' + result + ' ' + err + ' ' + code ) ;
+								// });
+
+                                destination = '/view';
+                                // destination = '/tos';	// should now be up-to-date and go to view
+
+                                break;
                         }
                     }
 
@@ -629,11 +686,69 @@ exports.loginCall = function (tokenRequest, res, next, destination, account) {
             }
             else if (account) {
 
-                // Sign-up
+		// Never go to the sign-up page - just autosignup instead,  -Lance.
+		if( true || account.network === 'guest' ) {
 
-                res.api.jar.signup = account;
-                res.api.redirect = '/signup/register';
-                next();
+			// Auto Sign-up (just do it and hope it works)
+
+			// res.api.jar.signup = account;
+			// res.api.redirect = '/signup/register';
+
+			    var registration = { network: [account.network, account.id] };
+				registration.username = account.username.replace(/[^\w+-]+/g, "");;
+				registration.email = account.email;
+				registration.name = account.name;
+
+			    // Api.clientCall('PUT', '/user' + (req.body.invite ? '?invite=' + encodeURIComponent(req.body.invite) : ''), registration, function (result, err, code)
+			    Api.clientCall('PUT', '/user?invite=public', registration, function (result, err, code) {
+
+				if (err === null) {
+
+				    // Login new user
+
+				    var tokenRequest = {
+
+					grant_type: 'http://ns.postmile.net/' + account.network,
+					x_user_id: account.id
+				    };
+
+					console.log( 'Lance PUT /user ok, calling loginCall ' ) ;
+
+				    exports.loginCall(tokenRequest, res, next, '/welcome');	// welcome instead of view?
+
+					console.log( 'Lance PUT /user ok after loginCall, redirecting' ) ;
+
+					// do this above via token action
+					// res.api.redirect = '/view';
+           			// next();
+
+				} else {
+
+				    // Try again, based on kind of error (username already in use, etc)
+
+					console.log( 'Lance PUT /user error: ' + err.code + ' - ' + err.error + ', ' + err.message ) ;
+
+					next();
+
+				}
+			    });
+
+		} else {
+
+			// now we're just giong direct to login, skip signup, tos
+			// by allowing any and all above
+			res.xxx() ;	// fail
+			
+			// Sign-up
+			// todo: fix this so when it fails because of invalid email or username (already taken), it tells the user to change it
+			//	rather than staying in this infinite cycle (perhaps just a UI change - just ensure we are telling the UI here)
+
+			res.api.jar.signup = account;
+			res.api.redirect = '/signup/register';
+			next();
+
+		}
+
             }
             else {
 

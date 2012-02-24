@@ -103,6 +103,11 @@ exports.register = function (req, res, next) {
 
                     // Try again
 
+		// todo: stop user from getting caught in an infinite cycle by ensuring that the error message is displayed in the UI
+		// it had been the case that the UI was not showing the error message that the email was already taken (like the username)
+		// I believe that error message is being correctly generated from here, but putting this reminder here to double check.
+		// -Lance.
+
                     res.api.jar.signup = req.api.jar.signup;
                     res.api.jar.signup.invite = req.body.invite;
                     res.api.jar.signup.name = req.body.name;

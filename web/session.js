@@ -116,7 +116,8 @@ exports.refresh = function (req, res, session, callback) {
 
                 exports.clear(res);
 
-                callback(Err.badRequest(errorMessage));
+                // fix undef -Lance.  callback(Err.badRequest(errorMessage));
+                callback(Err.badRequest(err.error));
             }
             else {
 

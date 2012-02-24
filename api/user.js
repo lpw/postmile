@@ -947,8 +947,9 @@ exports.link = function (request, reply) {
 
                     var criteria = {};
                     // todo: ensure this was wrong (or perhaps url should have acct id instead of prof id),  -Lance.  criteria[req.params.network] = req.params.id;
-                    // criteria[req.params.network] = req.body.id;
-					// criteria[request.params.network] = request.body.id;
+                    // not criteria[req.params.network] = req.body.id;
+					// not criteria[request.params.network] = request.body.id;
+					// not criteria[request.params.network] = request.params.id;
 					criteria[request.params.network] = request.payload.id;
 
                     Db.count('user', criteria, function (count, err) {

@@ -118,7 +118,7 @@ function doJsonReq(method, uri, content, responseFunc, myarg) {
                     };
                     if (jsonResponse.message === 'Insufficient TOS accepted') {
                         // getCredentials(function () {}/*, true*/);	// not refreshCredentials();
-                        window.location = postmile.api.uri + '/login';
+                        window.location = postmile.web.uri + '/login';	// fixed wrong postmile.api.uri,  -Lance.
                     } else {
                         xFire('postmile:askJoinCurrentProject', true, retryRequest);
                     }

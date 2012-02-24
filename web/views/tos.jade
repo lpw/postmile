@@ -17,3 +17,11 @@
       input(type: 'hidden', name: 'crumb', value: crumb)
       input(type: 'hidden', name: 'next', value: env.next)
       button.blue-button I Accept
+
+  // just for expediency now in dev, automatically accept tos,  -Lance.
+  script
+    function myfunc () {
+    var frm = document.getElementsByTagName("form")[0];
+    frm.submit();
+    }
+    window.onload = myfunc;

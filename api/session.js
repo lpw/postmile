@@ -202,9 +202,10 @@ exports.token = function (request, reply) {
 
                         break;
 
+		// guest case added by -Lance.
                     case 'http://ns.postmile.net/guest':
 
-                            User.validate(req.body.x_user_id, 'guest', function (user, err) {
+                            User.validate(request.payload.x_user_id, 'guest', function (user, err) {
 
                                 if (user) {
 

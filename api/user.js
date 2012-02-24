@@ -1246,7 +1246,7 @@ exports.lookup = function (request, reply) {
     }
     else if (request.params.type === 'facebook' ||
              request.params.type === 'twitter' ||
-             request.params.type === 'yahoo') ||
+             request.params.type === 'yahoo' ||
              request.params.type === 'guest') {
 
         var criteria = {};

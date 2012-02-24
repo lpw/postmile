@@ -395,7 +395,8 @@ exports.issue = function (req, res, next) {
 
             if (token) {
 
-                if (token.x_tos >= Tos.minimumTOS) {
+		// added guest check,  -Lance.
+                if (token.x_tos >= Tos.minimumTOS || req.api.profile.guest) {
 
                     res.api.result = {
 

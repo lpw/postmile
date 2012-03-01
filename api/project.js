@@ -180,7 +180,7 @@ exports.post = function (request, reply) {
                     reply(Hapi.Error.badRequest('Cannot include both position parameter and project object in body'));
                 }
             }
-            else if (request.query.position) {
+            else if (request.query.position || request.query.position===0) {	// need to check for 0 since that's false in js,  -Lance.
 
                 Sort.set('project', request.userId, 'participants.id', request.params.id, request.query.position, function (err) {
 

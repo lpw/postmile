@@ -1049,6 +1049,52 @@ exports.link = function (request, reply) {
 									                    }
 									                });
 
+													/* can't update an _id
+						                            var projectSortCriteria = { '_id': duser._id };
+						                            var projectSortChange = { $set: { '_id': survivingId } };
+						                            Db.updateCriteria('project.sort', null, projectSortCriteria, projectSortChange, function (err) {
+														if (err === null) {
+									                        console.log( 'replaced participants id in project.sort ' ) ;
+									                    } else {
+									                        console.log( 'error replacing participants id in project.sort ' ) ;
+									                    }
+									                });
+													*/
+													Db.get('project' + '.sort', duser._id, function (item, err) {
+
+												        if (err === null) {
+														
+															if( item ) {
+																
+																item._id = survivingId ;
+																Db.insert( 'project' + '.sort', item, function (item, err) {
+																	if (err === null) {
+												                        console.log( 'added new participants id in project.sort ' ) ;
+												                    } else {
+												                        console.log( 'error adding new participants id in project.sort ' ) ;
+												                    }
+												                });
+												
+															} else {
+																
+																console.log( 'error getting old participants id in project.sort ' ) ;
+																
+															}
+											
+															// needs to be after insertion to ensure it's still available for it
+															// seems to return err === undefined instead of err === null
+															Db.remove( 'project' + '.sort', duser._id, function (item, err) {
+																if (err === null) {	// || err === undefined
+											                        console.log( 'removed old participants id in project.sort ' ) ;
+											                    } else {
+											                        console.log( 'error removing participants id in project.sort ' + err ) ;
+											                    }
+											                });
+											
+														}
+													
+													});
+
 													// our could pull outside of loop, and before update, delete w critera network:id
 													console.log( 'Lance deleting user ' + duser._id + ' aka ' + duser.username ) ;
 													Db.remove('user', duser._id, function (err) {

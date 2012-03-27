@@ -1013,109 +1013,131 @@ exports.link = function (request, reply) {
 
                                     if (err === null) {
 
-										var survivingId = user._id ;
+										// now it's not the new guest id, 
+										// but the next most recent
+										// tho it requires a redirect w new session/id
+										// var survivingId = user._id ;
 
 										console.log( 'querying users that match ' + user._id ) ;
 
                     					Db.query('user', criteria, function (musers, err) {
 											
 											console.log( 'got ' + musers.length + ' users to match ' + user._id ) ;
-											for( var tmi = musers.length-1 ; tmi >= 0 ; tmi-- ) {
-												console.log( '	 ' + tmi + ': ' + musers[tmi]._id ) ;
-											}
 											
-											// count backwards to be sure we don't get bit by array compression for( var mi = 0 ; mi < count ; mi++ )
-											for( var mi = musers.length-1 ; mi >= 0 ; mi-- ) {
+											if( musers.length <= 1 ) {	// only need to combine if multiple
 												
-												var duser = musers[mi] ;
+	    	                                    // ? Stream.update({ object: 'profile', user: user._id }, request);
+		                                        reply({ status: 'ok' });
+											
+											} else {
 												
-												console.log( 'processing ' + mi + ' user ' + duser._id + ' and comoparing to survivingId ' + survivingId ) ;
+												var survivingId = null ;
+												// surviving id is more recent that's not this/guest one
+												// maybe we presume too much in order and perhaps should check creation date
+												for( var tmi = musers.length-1 ; tmi >= 0 ; tmi-- ) {
+													var tuser = musers[tmi] ;
+													console.log( '	tuser ' + tmi + ': ' + tuser._id + ' ' + survivingId ) ;
+													if( !survivingId && tuser._id !== user._id ) {
+														survivingId = tuser._id ;
+														// should/could break
+													}
+												}
 
-												if( duser._id !== survivingId ) {	// don't delete last one merged into	
+												// count backwards to be sure we don't get bit by array compression for( var mi = 0 ; mi < count ; mi++ )
+												for( var mi = musers.length-1 ; mi >= 0 ; mi-- ) {
+												
+													var duser = musers[mi] ;
+												
+													console.log( 'processing ' + mi + ' user ' + duser._id + ' and comoparing to survivingId ' + survivingId ) ;
 
-													// first, before deletes and updates, merge docs - may be many querys and updates 
-													// any other collections have embedded users besides projects?
+													if( duser._id !== survivingId ) {	// don't delete last one merged into	
+
+														// first, before deletes and updates, merge docs - may be many querys and updates 
+														// any other collections have embedded users besides projects?
 																
-													// this works better than querying through projects for participant.id's and then using that project id in the updateCreiteria field
-													// not sure what that second id arg does in updateCriteria as it seemed to only work on the first one
+														// this works better than querying through projects for participant.id's and then using that project id in the updateCreiteria field
+														// not sure what that second id arg does in updateCriteria as it seemed to only work on the first one
 													
-						                            var projectCriteria = { 'participants.id': duser._id };
-						                            var projectChange = { $set: { 'participants.$.id': survivingId } };
-						                            Db.updateCriteria('project', null, projectCriteria, projectChange, function (err) {
-														if (err === null) {
-									                        console.log( 'replaced participants id in project ' ) ;
-									                    } else {
-									                        console.log( 'error replacing participants id in project ' ) ;
-									                    }
-									                });
+							                            var projectCriteria = { 'participants.id': duser._id };
+							                            var projectChange = { $set: { 'participants.$.id': survivingId } };
+							                            Db.updateCriteria('project', null, projectCriteria, projectChange, function (err) {
+															if (err === null) {
+										                        console.log( 'replaced participants id in project ' ) ;
+										                    } else {
+										                        console.log( 'error replacing participants id in project ' ) ;
+										                    }
+										                });
 
-													/* can't update an _id
-						                            var projectSortCriteria = { '_id': duser._id };
-						                            var projectSortChange = { $set: { '_id': survivingId } };
-						                            Db.updateCriteria('project.sort', null, projectSortCriteria, projectSortChange, function (err) {
-														if (err === null) {
-									                        console.log( 'replaced participants id in project.sort ' ) ;
-									                    } else {
-									                        console.log( 'error replacing participants id in project.sort ' ) ;
-									                    }
-									                });
-													*/
-													Db.get('project' + '.sort', duser._id, function (item, err) {
+														/* can't update an _id
+							                            var projectSortCriteria = { '_id': duser._id };
+							                            var projectSortChange = { $set: { '_id': survivingId } };
+							                            Db.updateCriteria('project.sort', null, projectSortCriteria, projectSortChange, function (err) {
+															if (err === null) {
+										                        console.log( 'replaced participants id in project.sort ' ) ;
+										                    } else {
+										                        console.log( 'error replacing participants id in project.sort ' ) ;
+										                    }
+										                });
+														*/
+														Db.get('project' + '.sort', duser._id, function (item, err) {
 
-												        if (err === null) {
+													        if (err === null) {
 														
-															if( item ) {
+																if( item ) {
 																
-																item._id = survivingId ;
-																Db.insert( 'project' + '.sort', item, function (itemReturn, err) {
-																	if (err === null) {
-												                        console.log( 'added new participants id in project.sort ' + item._id + ' ' + itemReturn._id ) ;
+																	item._id = survivingId ;
+																	Db.insert( 'project' + '.sort', item, function (itemReturn, err) {
+																		if (err === null) {
+												                        	console.log( 'added new participants id in project.sort ' + item._id + ' ' + itemReturn._id ) ;
+												                    	} else {
+												                        	console.log( 'error adding new participants id in project.sort ' + item._id + ' ' + itemReturn._id ) ;
+												                    	}
+												                	});
+												
+																} else {
+																
+																	console.log( 'error getting old participants id in project.sort ' ) ;
+																
+																}
+											
+																// needs to be after insertion to ensure it's still available for it
+																// seems to return err === undefined instead of err === null
+																Db.remove( 'project' + '.sort', duser._id, function (err) {
+																	if (err === null) {	// || err === undefined
+												                        console.log( 'removed old participants id in project.sort ' ) ;
 												                    } else {
-												                        console.log( 'error adding new participants id in project.sort ' + item._id + ' ' + itemReturn._id ) ;
+												                        console.log( 'error removing participants id in project.sort ' + err ) ;
 												                    }
 												                });
-												
-															} else {
-																
-																console.log( 'error getting old participants id in project.sort ' ) ;
-																
+											
 															}
-											
-															// needs to be after insertion to ensure it's still available for it
-															// seems to return err === undefined instead of err === null
-															Db.remove( 'project' + '.sort', duser._id, function (err) {
-																if (err === null) {	// || err === undefined
-											                        console.log( 'removed old participants id in project.sort ' ) ;
-											                    } else {
-											                        console.log( 'error removing participants id in project.sort ' + err ) ;
-											                    }
-											                });
-											
-														}
 													
-													});
+														});
 
-													// our could pull outside of loop, and before update, delete w critera network:id
-													console.log( 'Lance deleting user ' + duser._id + ' aka ' + duser.username ) ;
-													Db.remove('user', duser._id, function (err) {
-														// not that since these callbacks are async, the clousure var duser may be iterated
-	                                    				if (err === null) {
-															console.log( 'Lance deleted user ' + duser._id) ;
-														} else {
-															console.log( 'Lance error deleting user ' + duser._id + ' ' + err ) ;
-														}
-													});
+														// our could pull outside of loop, and before update, delete w critera network:id
+														console.log( 'Lance deleting user ' + duser._id + ' aka ' + duser.username ) ;
+														Db.remove('user', duser._id, function (err) {
+															// not that since these callbacks are async, the clousure var duser may be iterated
+		                                    				if (err === null) {
+																console.log( 'Lance deleted user ' + duser._id) ;
+															} else {
+																console.log( 'Lance error deleting user ' + duser._id + ' ' + err ) ;
+															}
+														});
 											
-												}
+													}
 																																				
-											}
+												}
 														
-											// todo: only do this upon successful merge and delete?								
-	                                        // Stream.update({ object: 'profile', user: user._id }, req);
-	                                        // res.api.result = { status: 'ok' };
-	                                        // next();
-    	                                    Stream.update({ object: 'profile', user: user._id }, request);
-	                                        reply({ status: 'ok' });
+												// todo: only do this upon successful merge and delete?								
+		                                        // Stream.update({ object: 'profile', user: user._id }, req);
+		                                        // res.api.result = { status: 'ok' };
+		                                        // next();
+	    	                                    Stream.update({ object: 'profile', user: user._id }, request);
+		                                        reply({ status: 'relogin' });	// user id changed - need to login again
+
+											}
+
 											
 										});
 								

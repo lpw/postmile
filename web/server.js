@@ -163,7 +163,9 @@ internals.preprocessRequest = function (req, res, next) {
 
                 isNotWithStupid = ((req.api.agent.name === 'chrome' && Semver.satisfies(version, '>= 11.x.x')) ||
                                    (req.api.agent.name === 'safari' && Semver.satisfies(version, '>= 5.x.x')) ||
-                                   (req.api.agent.name === 'firefox' && Semver.satisfies(version, '>= 4.x.x')));
+                                   (req.api.agent.name === 'firefox' && Semver.satisfies(version, '>= 4.x.x')) ||
+                                   // (req.api.agent.name === 'msie' && Semver.satisfies(version, '>= 8.x.x')) ||
+									false );
             }
         }
     }

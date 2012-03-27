@@ -48,8 +48,21 @@ exports.login = function (req, res, next) {
             !req.api.session.tos ||
             req.api.session.tos < Tos.minimumTOS) {
 
-            res.api.redirect = '/tos' + (req.query.next && req.query.next.charAt(0) === '/' ? '?next=' + encodeURIComponent(req.query.next) : '');
-            next();
+            // res.api.redirect = '/tos' + (req.query.next && req.query.next.charAt(0) === '/' ? '?next=' + encodeURIComponent(req.query.next) : '');
+            // next();
+			// Lance - just post a faux acceptance for now and save the redirect until we have maningful tos
+		    Api.clientCall('POST', '/user/' + req.api.profile.id + '/tos/' + Tos.currentTOS, '', function (result, err, code) {
+
+		        // Refresh token
+
+		        Session.refresh(req, res, req.api.session, function (session, err) {
+
+					// if we're redirecting just to refresh the cookies, let's find another way
+		            res.api.redirect = '/tos' + (req.body.next ? '?next=' + encodeURIComponent(req.body.next) : '');
+		            next();
+		        });
+		    });
+
         }
         else {
 
@@ -540,8 +553,18 @@ exports.auth = function (req, res, next) {
 				}, function (result, err, code) {
 
                 // res.api.redirect = '/account/linked';	// -Lance.
-				res.api.redirect = '/view';	// reload view
-                next();
+				// res.api.redirect = '/view';	// reload view
+                // next();
+				
+				if( result.status === 'relogin' ) {
+					console.log( 'finalizedLogin relogin ' ) ;
+					exports.relogin( req, res, next ) ;	// Session.refresh(req, res, req to /view
+				} else {
+					// done by entry?
+					// res.api.redirect = '/view';	// reload view
+	                // next();
+				}
+
             });
         }
         else {

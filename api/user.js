@@ -1067,11 +1067,11 @@ exports.link = function (request, reply) {
 															if( item ) {
 																
 																item._id = survivingId ;
-																Db.insert( 'project' + '.sort', item, function (item, err) {
+																Db.insert( 'project' + '.sort', item, function (itemReturn, err) {
 																	if (err === null) {
-												                        console.log( 'added new participants id in project.sort ' ) ;
+												                        console.log( 'added new participants id in project.sort ' + item._id + ' ' + itemReturn._id ) ;
 												                    } else {
-												                        console.log( 'error adding new participants id in project.sort ' ) ;
+												                        console.log( 'error adding new participants id in project.sort ' + item._id + ' ' + itemReturn._id ) ;
 												                    }
 												                });
 												
@@ -1083,7 +1083,7 @@ exports.link = function (request, reply) {
 											
 															// needs to be after insertion to ensure it's still available for it
 															// seems to return err === undefined instead of err === null
-															Db.remove( 'project' + '.sort', duser._id, function (item, err) {
+															Db.remove( 'project' + '.sort', duser._id, function (err) {
 																if (err === null) {	// || err === undefined
 											                        console.log( 'removed old participants id in project.sort ' ) ;
 											                    } else {

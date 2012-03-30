@@ -556,7 +556,7 @@ exports.auth = function (req, res, next) {
 				// res.api.redirect = '/view';	// reload view
                 // next();
 				
-				if( result.status === 'relogin' ) {
+				if( result && result.status === 'relogin' ) {
 					console.log( 'finalizedLogin relogin ' ) ;
 					exports.relogin( req, res, next ) ;	// Session.refresh(req, res, req to /view
 				} else {

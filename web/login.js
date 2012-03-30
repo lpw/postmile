@@ -266,7 +266,9 @@ exports.auth = function (req, res, next) {
                 pathname: '/oauth/authorize',
                 query: {
 
-                    client_id: Vault.facebook.clientId,
+                    // client_id: Vault.facebook.clientId,
+					// use different fb app id depending on host reference,  -Lance.
+					client_id: Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ].clientId,
                     response_type: 'code',
                     scope: 'email',
                     redirect_uri: Config.host.uri('web') + '/auth/facebook',
@@ -291,8 +293,10 @@ exports.auth = function (req, res, next) {
 
                     var query = {
 
-                        client_id: Vault.facebook.clientId,
-                        client_secret: Vault.facebook.clientSecret,
+                    	// client_id: Vault.facebook.clientId,
+						// use different fb app id and secret depending on host reference,  -Lance.
+						client_id: Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ].clientId,
+                        client_secret: Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ].clientSecret,
                         grant_type: 'authorization_code',
                         code: req.query.code,
                         redirect_uri: Config.host.uri('web') + '/auth/facebook'

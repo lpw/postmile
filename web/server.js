@@ -453,7 +453,9 @@ internals.finalizeResponse = function (req, res) {
 
         if (res.api.redirect) {
 
-            var location = ((res.api.redirect.indexOf('http') !== 0 && res.api.redirect.indexOf('postmile://') !== 0) ? Config.host.uri('web') + res.api.redirect : res.api.redirect);
+            // var location = ((res.api.redirect.indexOf('http') !== 0 && res.api.redirect.indexOf('postmile://') !== 0) ? Config.host.uri('web') + res.api.redirect : res.api.redirect);
+            // use req context for domain
+            var location = ((res.api.redirect.indexOf('http') !== 0 && res.api.redirect.indexOf('postmile://') !== 0) ? Config.host.uri('web', req) + res.api.redirect : res.api.redirect);	// added req context for domain/host,  -Lance.
             res.send(res.api.result || 'You are being redirected...', { 'Location': location }, (req.method === 'GET' || location.indexOf('http') !== 0 ? 307 : 303));
         }
         else {

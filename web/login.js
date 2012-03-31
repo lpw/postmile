@@ -271,7 +271,7 @@ exports.auth = function (req, res, next) {
 					client_id: Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ].clientId,
                     response_type: 'code',
                     scope: 'email',
-                    redirect_uri: Config.host.uri('web') + '/auth/facebook',
+                    redirect_uri: Config.host.uri('web', req) + '/auth/facebook',	// added req context for domain/host,  -Lance.
                     state: Utils.getRandomString(22),
                     display: req.api.agent.os === 'iPhone' ? 'touch' : 'page'
                 }
@@ -299,7 +299,7 @@ exports.auth = function (req, res, next) {
                         client_secret: Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ].clientSecret,
                         grant_type: 'authorization_code',
                         code: req.query.code,
-                        redirect_uri: Config.host.uri('web') + '/auth/facebook'
+                        redirect_uri: Config.host.uri('web', req) + '/auth/facebook'	// added req context for domain/host,  -Lance.
                     };
 
                     var body = QueryString.stringify(query);
@@ -567,6 +567,7 @@ exports.auth = function (req, res, next) {
 					// done by entry?
 					// res.api.redirect = '/view';	// reload view
 	                // next();
+					entry();
 				}
 
             });

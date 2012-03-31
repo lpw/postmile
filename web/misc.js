@@ -86,8 +86,8 @@ exports.feedback = function (req, res, next) {
 exports.config = function (req, res, next) {
 
     var config = Utils.clone(Config.host);
-    config.web.uri = Config.host.uri('web');
-    config.api.uri = Config.host.uri('api');
+    config.web.uri = Config.host.uri('web', req);	// added req context for domain/host,  -Lance.
+    config.api.uri = Config.host.uri('api', req);	// added req context for domain/host,  -Lance.
 
     res.api.result = 'var postmile = ' + JSON.stringify(config) + ';';
     res.api.isAPI = true;
@@ -99,6 +99,6 @@ exports.config = function (req, res, next) {
 
 exports.socketio = function (req, res, next) {
 
-    res.api.redirect = Config.host.uri('api') + '/socket.io/socket.io.js';
+    res.api.redirect = Config.host.uri('api', req) + '/socket.io/socket.io.js';	// added req context for domain/host,  -Lance.
     next();
 };

@@ -24,11 +24,18 @@ exports.host = {
         scheme: 'http'
     },
 
-    uri: function (type) {
+    uri: function (type, req) {
 
         var set = (type === 'web' ? exports.host.web : exports.host.api);
-        return set.scheme + '://' + set.domain + (set.port ? ':' + set.port : '');
+        // return set.scheme + '://' + set.domain + (set.port ? ':' + set.port : '');
+	// More req context for domain,  -Lance
+        return set.scheme + '://' + (
+		( req && req.headers ) ?
+			( req.headers.host ) :
+			( set.domain + (set.port ? ':' + set.port : '') )
+	) ;
     },
+
 
     authority: function (type) {
 

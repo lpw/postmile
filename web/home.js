@@ -28,6 +28,9 @@ exports.get = function (req, res, next) {
         // res.api.view = { template: 'home', locals: locals };
 
 		res.api.redirect = '/auth/guest';
+		// don't have to do this here/now as it's part of next's finalizeResponse
+		// res.api.redirect = 'http://' + req.headers.host + '/auth/guest' ;
+		// res.api.redirect = Config.host.uri('web', req) + '/auth/guest',	// added req context for domain/host,  -Lance.
 	
         next();
     }

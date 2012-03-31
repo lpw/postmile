@@ -41,8 +41,15 @@ exports.twitter = {
 
 exports.facebook = {
 
-    clientId: '',
-    clientSecret: '',
+	// multi-domain support added to lookup app info based on domain (not suffix, no port)
+    domain1: {
+    	clientId: '',
+    	clientSecret: '',
+    },
+    domain2: {
+    	clientId: '',
+    	clientSecret: '',
+    }
 };
 
 

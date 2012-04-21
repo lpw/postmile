@@ -45,7 +45,13 @@ exports.type.put.title.required = true;
 exports.type.participants = {
 
     participants:   { type: 'id',       array: true },      // type can also be email
-    names:          { type: 'string',   array: true }
+    names:          { type: 'string',   array: true },
+    facebookIds:          { type: 'string',   array: true }	// added for facebook sharing,  -Lance.
+};
+
+// added new type for facebook shares - don't require it even tho req'd w facebookIds for compat/now,  -Lance.
+exports.type.getFacebook = {
+    facebookId:         { type: 'string' /*, required: true*/ }	
 };
 
 exports.type.uninvite = {
@@ -73,7 +79,7 @@ exports.get = function (request, reply) {
 
             reply(err);
         }
-    });
+    }, request.payload.facebookId );	// added for facebook share,  -Lance.
 };
 
 
@@ -390,13 +396,44 @@ exports.participants = function (request, reply) {
     function process() {
 
         if (request.payload.participants ||
-            request.payload.names) {
+            request.payload.names ||
+			request.payload.facebookIds ) {	// added for facebook shares,  -Lance.
 
             exports.load(request.params.id, request.userId, true, function (project, member, err) {
 
                 if (project) {
 
                     var change = { $pushAll: { participants: []} };
+
+                    // Cnovert facebook shares,  -Lance.
+
+                    if (request.payload.facebookIds) {
+
+                        for (var i = 0, il = request.payload.facebookIds.length; i < il; ++i) {
+							// for now, set link to be true (not copy)
+                            var participant = { facebookId: request.payload.facebookIds[i], display: request.payload.facebookIds[i], link: true };
+                            change.$pushAll.participants.push(participant);
+                        }
+
+                        if (request.payload.participants === undefined && request.payload.names === undefined) {
+
+                            // No naames or user accounts to invite, save project
+
+                            Db.update('project', project._id, change, function (err) {
+
+                                if (err === null) {
+
+                                    // Return success
+
+                                    finalize();
+                                }
+                                else {
+
+                                    reply(err);
+                                }
+                            });
+                        }
+                    }
 
                     // Add pids (non-users)
 
@@ -827,7 +864,7 @@ exports.join = function (request, reply) {
 
 // Load project from database and check for user rights
 
-exports.load = function (projectId, userId, isWritable, callback) {
+exports.load = function (projectId, userId, isWritable, callback, facebookId) {
 
     Db.get('project', projectId, function (item, err) {
 
@@ -847,6 +884,54 @@ exports.load = function (projectId, userId, isWritable, callback) {
 
                     break;
                 }
+
+				// check facebook invites,  -Lance.
+				// x put facebookId's in as participants with facebook flag
+				// todo: calc facebookId
+				// L look in some precedence order, member, public, copy, link, etc.?
+				// N put !item.participants[i].facebook in above userId check?
+                if (item.participants[i].facebookId &&
+					facebookId &&
+                    item.participants[i].facebookId === facebookId) {
+
+                    member = item.participants[i];
+
+					if( member.link ) {
+
+						console.log( 'Lance linking ' + item.participants[i].facebookId ) ;
+
+						// update member with userId
+						member.id = userId ;
+					
+						// clear facebookId?
+						// member.facebookId = '' ;
+					
+						// todo: update db w member
+                        // var participant = { pid: member.pid, display: member.display };
+                        Db.updateCriteria('project', project._id, { 'participants.facebookId': facebookId }, { $set: { 'participants.$': member } }, function (err) {
+                            // callback(err);
+							console.log( 'Lance Project load, converted facebookId to userId ' + facebookId + ' ' + userId ) ;
+                        });
+						
+					} else if( member.copy ) {
+						
+						// todo: create new project clone but w userId as owner
+						console.log( 'Lance copy todo ' + item.participants[i].id ) ;
+
+					} else {
+						
+						// todo: throw error
+						console.log( 'Lance error wih no copy or link in participants ' + item.participants[i].id ) ;
+					}
+					
+					// check to see what callback does with member
+					
+                    break;
+                }
+
+				// check public invite,  -Lance.
+				// similar to above with item.participants[i].public
+
             }
 
             if (member) {

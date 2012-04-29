@@ -3,13 +3,36 @@
 * See LICENSE file included with this code project for license terms.
 */
 
+// added for testing,  -Lance.
+var Utils = require('./utils');
+
 // Get home page
 
 exports.get = function (req, res, next) {
 
-    if (req.api.profile) {
+// just for testing
+var sr = req.body.signed_request ;
+var secret = '1205a0b8e085d6061b2a2f71e94125cf' ;
+var dataFsr = Utils.parse_signed_request( sr, secret );
+// var dataFsr = Utils.decrypt( secret, sr );
+console.log( 'Lance home get ' + req.query.request_ids + ' ' + dataFsr ) ;
+	
+	if( false && req.query.request_ids ) {	// fb req,  -Lance.
+	
+		var rids = req.query.request_ids.split( ',' ) ;
+		for( var ri=0 ; ri < rids.length ; ri++ ) {
+			console.log( 'Lance req rid ' + rids[ri] ) ;
+		}
+		
+	}
+    else if (req.api.profile) {
 
-        res.api.redirect = req.api.profile.view;
+        res.api.redirect = req.api.profile.view ;
+
+		if( req.query.request_ids ) {
+			res.api.redirect += '#r=' + req.query.request_ids ;
+		}
+		
         next();
     }
     else {

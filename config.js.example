@@ -13,7 +13,7 @@ exports.host = {
     web: {
 
         domain: 'localhost',
-        port: 8000,
+        port: 80,
         scheme: 'http'
     },
 

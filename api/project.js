@@ -49,10 +49,12 @@ exports.type.participants = {
     facebookIds:          { type: 'string',   array: true }	// added for facebook sharing,  -Lance.
 };
 
+/* payload/schema not available w GET (could load fbid from db using userId)
 // added new type for facebook shares - don't require it even tho req'd w facebookIds for compat/now,  -Lance.
 exports.type.getFacebook = {
-    facebookId:         { type: 'string' /*, required: true*/ }	
+    facebookId:         { type: 'string' }	// required: true
 };
+*/
 
 exports.type.uninvite = {
 
@@ -79,7 +81,9 @@ exports.get = function (request, reply) {
 
             reply(err);
         }
-    }, request.payload.facebookId );	// added for facebook share,  -Lance.
+    // } );
+    // }, request.payload.facebookId );	// added for facebook share,  -Lance.
+    }, request.params.fbid );	// added for facebook share,  -Lance.
 };
 
 
@@ -908,7 +912,7 @@ exports.load = function (projectId, userId, isWritable, callback, facebookId) {
 					
 						// todo: update db w member
                         // var participant = { pid: member.pid, display: member.display };
-                        Db.updateCriteria('project', project._id, { 'participants.facebookId': facebookId }, { $set: { 'participants.$': member } }, function (err) {
+                        Db.updateCriteria('project', projectId, { 'participants.facebookId': facebookId }, { $set: { 'participants.$': member } }, function (err) {
                             // callback(err);
 							console.log( 'Lance Project load, converted facebookId to userId ' + facebookId + ' ' + userId ) ;
                         });

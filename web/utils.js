@@ -131,7 +131,15 @@ exports.decrypt = function (key, value) {
 
 // function parse_signed_request(signed_request, secret) {
 exports.parse_signed_request = function (signed_request, secret) {
-    encoded_data = signed_request.split('.',2);
+
+    encoded_data = signed_request && signed_request.split('.',2);
+
+    // check data
+    if (!encoded_data || encoded_data.length < 2 ) {
+        console.error('encoded_data not an array >= 2');
+        return null;
+    }
+
     // decode the data
     sig = encoded_data[0];
     // json = base64url.decode(encoded_data[1]);
@@ -152,4 +160,5 @@ exports.parse_signed_request = function (signed_request, secret) {
     }
 
     return data;
+
 }

@@ -46,7 +46,9 @@ exports.type.participants = {
 
     participants:   { type: 'id',       array: true },      // type can also be email
     names:          { type: 'string',   array: true },
-    facebookIds:          { type: 'string',   array: true }	// added for facebook sharing,  -Lance.
+    // added for facebook sharing,  -Lance.
+    facebookIds:          { type: 'string',   array: true },
+    shareType:          { type: 'string' }
 };
 
 /* payload/schema not available w GET (could load fbid from db using userId)
@@ -414,8 +416,11 @@ exports.participants = function (request, reply) {
                     if (request.payload.facebookIds) {
 
                         for (var i = 0, il = request.payload.facebookIds.length; i < il; ++i) {
-							// for now, set link to be true (not copy)
-                            var participant = { facebookId: request.payload.facebookIds[i], display: request.payload.facebookIds[i], link: true };
+                            var participant = { 
+								facebookId: request.payload.facebookIds[i], 
+								display: request.payload.facebookIds[i], 
+								shareType: request.payload.shareType
+							};
                             change.$pushAll.participants.push(participant);
                         }
 
@@ -899,14 +904,13 @@ exports.load = function (projectId, userId, isWritable, callback, facebookId) {
                     item.participants[i].facebookId === facebookId) {
 
                     member = item.participants[i];
-
-					if( member.link ) {
+					// update member with userId
+					member.id = userId ;
+				
+					if( member.shareType === 'link' ) {
 
 						console.log( 'Lance linking ' + item.participants[i].facebookId ) ;
 
-						// update member with userId
-						member.id = userId ;
-					
 						// clear facebookId?
 						// member.facebookId = '' ;
 					
@@ -917,15 +921,40 @@ exports.load = function (projectId, userId, isWritable, callback, facebookId) {
 							console.log( 'Lance Project load, converted facebookId to userId ' + facebookId + ' ' + userId ) ;
                         });
 						
-					} else if( member.copy ) {
+					} else if( member.shareType === 'copy' ) {
 						
-						// todo: create new project clone but w userId as owner
-						console.log( 'Lance copy todo ' + item.participants[i].id ) ;
+						// create new project clone but w userId as owner - prob shouldn't do this on a GET (id change, etc)
+						// from put
+						// just use item instead of project
+						// var project = request.payload;
+					    // project.participants = [{ id: request.userId}];
+					    item.participants = [{ id: member.id }] ;	// userId
+						var oldItemId = item._id ;
+						item._id = null ;
+						
+					    Db.insert('project', item, function (items, err) {	// project
 
+					        if (err === null) {
+								
+					            // Stream.update({ object: 'projects', user: request.userId }, request);
+					            // reply({ status: 'ok', id: items[0]._id }, { created: 'project/' + items[0]._id });
+								console.log( 'Lance project load - copy succeeded from ' + oldItemId + ' to ' + items[0]._id ) ;
+								item = items[0] ;	// for callback
+								
+					        } else {
+
+					            // reply(err);
+								console.log( 'Lance project load - copy failed from ' + oldItemId + ' with ' + err ) ;
+
+					        }
+					
+					    });
+					    
 					} else {
 						
 						// todo: throw error
-						console.log( 'Lance error wih no copy or link in participants ' + item.participants[i].id ) ;
+						console.log( 'Lance error wih shareType not copy or link in participants ' + item.participants[i].id ) ;
+						
 					}
 					
 					// check to see what callback does with member

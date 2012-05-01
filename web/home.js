@@ -10,12 +10,13 @@ var Utils = require('./utils');
 
 exports.get = function (req, res, next) {
 
-// just for testing
-var sr = req.body.signed_request ;
-var secret = '1205a0b8e085d6061b2a2f71e94125cf' ;
-var dataFsr = Utils.parse_signed_request( sr, secret );
-// var dataFsr = Utils.decrypt( secret, sr );
-console.log( 'Lance home get ' + req.query.request_ids + ' ' + dataFsr ) ;
+	if( false ) {	// just for testing
+		var sr = req.body.signed_request ;
+		var secret = '1205a0b8e085d6061b2a2f71e94125cf' ;
+		var dataFsr = Utils.parse_signed_request( sr, secret );
+		// var dataFsr = Utils.decrypt( secret, sr );
+		console.log( 'Lance home get ' + req.query.request_ids + ' ' + dataFsr ) ;
+	}
 	
 	if( false && req.query.request_ids ) {	// fb req,  -Lance.
 	
@@ -27,9 +28,11 @@ console.log( 'Lance home get ' + req.query.request_ids + ' ' + dataFsr ) ;
 	}
     else if (req.api.profile) {
 
-        res.api.redirect = req.api.profile.view ;
+        // res.api.redirect = req.api.profile.view ;
+		// todo: what about request_id's ?
+        res.api.view = req.api.profile.view ;
 
-		if( req.query.request_ids ) {
+		if( req.query.request_ids ) {	// fb req,  -Lance.
 			res.api.redirect += '#r=' + req.query.request_ids ;
 		}
 		

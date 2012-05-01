@@ -194,8 +194,10 @@ internals.preprocessRequest = function (req, res, next) {
 
                 // req.api.profile.view = req.api.profile.view || '/view/';
 				// use different html views depending on host reference,  -Lance.
-				req.api.profile.view = req.api.profile.view || '/view/' + req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) + '-min.html' ;
-				
+				// req.api.profile.view = req.api.profile.view || '/view/' + req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) + '-min.html' ;
+				// req.api.profile.view = req.api.profile.view || '/view/' + req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) + '-min.html' ;
+				req.api.profile.view = { template: 'newtemplate' };
+
             }
 
             next();

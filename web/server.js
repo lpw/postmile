@@ -69,7 +69,8 @@ exports.create = function (paths) {
 
         server.set('views', __dirname + '/views');
         server.set('view engine', 'jade');
-        server.set('view options', { colons: true });
+        // -Lance. server.set('view options', { colons: true });
+        server.set('view options', { colons: true, layout: false });
 
         server.use(Express.bodyParser());
         server.use(Express.cookieParser());
@@ -196,7 +197,15 @@ internals.preprocessRequest = function (req, res, next) {
 				// use different html views depending on host reference,  -Lance.
 				// req.api.profile.view = req.api.profile.view || '/view/' + req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) + '-min.html' ;
 				// req.api.profile.view = req.api.profile.view || '/view/' + req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) + '-min.html' ;
-				req.api.profile.view = { template: 'newtemplate' };
+				req.api.profile.view = { 
+					template: '../../clients/view/list', 
+					locals: { 
+						env: { 
+							hostname: req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ),
+							debug: req.query.debug
+						}
+					}
+				};
 
             }
 

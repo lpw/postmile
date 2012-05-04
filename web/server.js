@@ -202,7 +202,8 @@ internals.preprocessRequest = function (req, res, next) {
 					locals: { 
 						env: { 
 							hostname: req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ),
-							debug: req.query.debug
+							// debug: req.query.debug
+							debug: process.argv[2] === 'debug'
 						}
 					}
 				};

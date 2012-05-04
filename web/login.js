@@ -674,8 +674,9 @@ exports.loginCall = function (tokenRequest, res, next, destination, account) {
 									// console.log( 'Lance: iplicited accepted TOS for guest user with ' + result + ' ' + err + ' ' + code ) ;
 								// });
 
-                                destination = '/view';
                                 // destination = '/tos';	// should now be up-to-date and go to view
+                                // destination = '/view';	now we're just rendering a root template
+                                destination = '/';
 
                                 break;
                         }

@@ -28,7 +28,12 @@ exports.get = function (req, res, next) {
     }
     else {
 
-        res.api.redirect = (req.query.next && req.query.next.charAt(0) === '/' ? req.query.next : req.api.profile.view);
+        // view instead of redirect,  -Lance.  res.api.redirect = (req.query.next && req.query.next.charAt(0) === '/' ? req.query.next : req.api.profile.view);
+        if (req.query.next && req.query.next.charAt(0) === '/' ) {
+        	res.api.redirect = req.query.next ;
+		} else {
+			res.api.view = req.api.profile.view ;
+		}
         next();
     }
 };

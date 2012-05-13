@@ -563,11 +563,37 @@ exports.auth = function (req, res, next) {
 				if( result && result.status === 'relogin' ) {
 					console.log( 'finalizedLogin relogin ' ) ;
 					exports.relogin( req, res, next ) ;	// Session.refresh(req, res, req to /view
+				/*  -Lance.
+				} else if( code === 400 ) {
+					// view, result, redirect, or error needed to send reply
+					res.api.redirect = '/' ;	
+					// exports.login( req, res, next ) ;	// Session.refresh(req, res, req to /view, does next()
+					console.log( 'already linked ' ) ;
+					// res.api.view = req.api.profile.view ;
+					next() ;	//  or no op?
 				} else {
 					// done by entry?
 					// res.api.redirect = '/view';	// reload view
 	                // next();
-					entry();
+					entry();	// recurse?
+				}
+				*/
+				/*
+				} else {
+					// Login
+					var tokenRequest = {
+						grant_type: 'http://ns.postmile.net/' + account.network,
+						x_user_id: account.id
+					};
+
+					var destination = req.api.jar.auth ? req.api.jar.auth.next : null;
+					exports.loginCall(tokenRequest, res, next, destination, account);
+				}
+				*/
+				} else {
+					console.log( 'already linked ' ) ;
+					res.api.redirect = '/' ;	
+					next() ;
 				}
 
             });

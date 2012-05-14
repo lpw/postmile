@@ -433,7 +433,19 @@ internals.finalizeResponse = function (req, res) {
         locals.env = locals.env || {};
         locals.host = Config.host;
         locals.profile = req.api.profile;
-        locals.auth = { facebook: Vault.facebook.clientId ? true : false, twitter: Vault.twitter.clientId ? true : false, yahoo: Vault.yahoo.clientId ? true : false };
+        // -Lance. locals.auth = { facebook: Vault.facebook.clientId ? true : false, twitter: Vault.twitter.clientId ? true : false, yahoo: Vault.yahoo.clientId ? true : false };
+		var hostname = req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ;
+		console.log( 'LANCE ' + req.headers.host + ' ' + hostname ) ;
+        locals.auth = { 
+			facebook: Vault.facebook[hostname] && Vault.facebook[hostname].clientId ? true : false, 
+			twitter: Vault.twitter[hostname] && Vault.twitter[hostname].clientId ? true : false, 
+			yahoo: Vault.yahoo[hostname] && Vault.yahoo[hostname].clientId ? true : false 
+		};
+        locals.authId = { 
+			facebook: Vault.facebook[hostname] && Vault.facebook[hostname].clientId, 
+			twitter: Vault.twitter[hostname] && Vault.twitter[hostname].clientId, 
+			yahoo: Vault.yahoo[hostname] && Vault.yahoo[hostname].clientId 
+		};
         locals.product = Config.product;
 
         // Add crumb

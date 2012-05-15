@@ -941,6 +941,16 @@ exports.load = function (projectId, userId, isWritable, callback, facebookId) {
 								console.log( 'Lance project load - copy succeeded from ' + oldItemId + ' to ' + items[0]._id ) ;
 								item = items[0] ;	// for callback
 								
+								// has new participants - copy details?
+								
+								// copy tasks, no details
+								// copy from Tasks.list
+								
+								// mark as copied w new id
+								
+								// what about the imminent /tasks call to the original id - how to we make that work right?
+								// I think we need a seperate clone call...
+								
 					        } else {
 
 					            // reply(err);

@@ -435,7 +435,6 @@ internals.finalizeResponse = function (req, res) {
         locals.profile = req.api.profile;
         // -Lance. locals.auth = { facebook: Vault.facebook.clientId ? true : false, twitter: Vault.twitter.clientId ? true : false, yahoo: Vault.yahoo.clientId ? true : false };
 		var hostname = req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ;
-		console.log( 'LANCE ' + req.headers.host + ' ' + hostname ) ;
         locals.auth = { 
 			facebook: Vault.facebook[hostname] && Vault.facebook[hostname].clientId ? true : false, 
 			twitter: Vault.twitter[hostname] && Vault.twitter[hostname].clientId ? true : false, 

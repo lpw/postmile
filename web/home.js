@@ -18,22 +18,34 @@ exports.get = function (req, res, next) {
 		console.log( 'Lance home get ' + req.query.request_ids + ' ' + dataFsr ) ;
 	}
 	
-	if( false && req.query.request_ids ) {	// fb req,  -Lance.
-	
-		var rids = req.query.request_ids.split( ',' ) ;
-		for( var ri=0 ; ri < rids.length ; ri++ ) {
-			console.log( 'Lance req rid ' + rids[ri] ) ;
-		}
-		
-	}
-    else if (req.api.profile) {
+	if (req.api.profile) {
 
         // res.api.redirect = req.api.profile.view ;
 		// todo: what about request_id's ?
         res.api.view = req.api.profile.view ;
 
+		// if( req.query.request_ids ) {	// fb req,  -Lance.
+			// res.api.redirect += '#r=' + req.query.request_ids ;
+		// }
+
+		// todo: don't send dacebookId with get and other client-side stuff
+		// finish routes for copy and join
+		// parse and handle request in web home (call fb for details, then api's copy and link
 		if( req.query.request_ids ) {	// fb req,  -Lance.
-			res.api.redirect += '#r=' + req.query.request_ids ;
+			
+			var rids = req.query.request_ids.split( ',' ) ;
+
+			// for each request
+			for( var ri=0 ; ri < rids.length ; ri++ ) {
+
+				console.log( 'Lance req rid ' + rids[ri] ) ;
+
+				// get req details from fb
+				
+				// issue share join to api: copy or link
+
+			}
+				
 		}
 		
         next();

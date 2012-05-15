@@ -83,9 +83,9 @@ exports.get = function (request, reply) {
 
             reply(err);
         }
-    // } );
+    } );
     // }, request.payload.facebookId );	// added for facebook share,  -Lance.
-    }, request.params.fbid );	// added for facebook share,  -Lance.
+    // back for normal since we handle requests in web home with api's copy and link }, request.params.fbid );	// added for facebook share,  -Lance.
 };
 
 
@@ -871,6 +871,66 @@ exports.join = function (request, reply) {
 };
 
 
+// Accept project fb copy invitation
+
+exports.copy = function (request, reply) {
+
+    // The only place allowed to request a non-writable copy for modification
+    exports.load(request.params.id, request.userId, false, function (project, member, err) {
+
+        if (project) {
+
+            // Not: Verify user is pending	if (member.isPending) else 'Already a member of the project'
+			// Db.updateCriteria('project', project._id, { 'participants.id': request.userId }, { $unset: { 'participants.$.isPending': 1} }, function (err) {
+			// Stream.update({ object: 'project', project: project._id }, request);
+			// Stream.update({ object: 'projects', user: request.userId }, request);
+
+			// create new project clone but w userId as owner
+		    // project.participants = [{ id: request.userId}];
+			var oldItemId = project._id ;
+			project._id = null ;
+		    project.participants = [{ id: member.id }] ;	// userId
+		
+		    Db.insert('project', project, function (items, err) {	// project
+
+		        if (err === null) {
+				
+		            // Stream.update({ object: 'projects', user: request.userId }, request);
+		            // reply({ status: 'ok', id: items[0]._id }, { created: 'project/' + items[0]._id });
+					project = items[0] ;	// for callback
+				
+					// has new participants - copy details?
+				
+					// copy tasks, no details
+					// copy from Tasks.list
+				
+					// mark as copied w new id?
+				
+					console.log( 'Lance project load - copy succeeded from ' + oldItemId + ' to ' + items[0]._id ) ;
+					reply({ status: 'ok', id: project._id });
+				
+		        } else {
+
+					console.log( 'Lance project load - copy failed from ' + oldItemId + ' with ' + err ) ;
+					reply(err);
+
+		        }
+	
+		    });
+	    
+		} else {
+		
+			// todo: throw error
+			console.log( 'Lance error wih shareType not copy or link in participants ' + item.participants[i].id ) ;
+		
+		}
+
+    // -Lance. });
+	}, request.params.fbid ) ;
+	
+};
+
+
 // Load project from database and check for user rights
 
 exports.load = function (projectId, userId, isWritable, callback, facebookId) {
@@ -894,6 +954,7 @@ exports.load = function (projectId, userId, isWritable, callback, facebookId) {
                     break;
                 }
 
+				// db manip was too complicated for a simple get, so simplified by adding copy and link join methods
 				// check facebook invites,  -Lance.
 				// x put facebookId's in as participants with facebook flag
 				// todo: calc facebookId
@@ -907,6 +968,7 @@ exports.load = function (projectId, userId, isWritable, callback, facebookId) {
 					// update member with userId
 					member.id = userId ;
 				
+					/*
 					if( member.shareType === 'link' ) {
 
 						console.log( 'Lance linking ' + item.participants[i].facebookId ) ;
@@ -966,6 +1028,7 @@ exports.load = function (projectId, userId, isWritable, callback, facebookId) {
 						console.log( 'Lance error wih shareType not copy or link in participants ' + item.participants[i].id ) ;
 						
 					}
+					*/
 					
 					// check to see what callback does with member
 					
@@ -974,6 +1037,7 @@ exports.load = function (projectId, userId, isWritable, callback, facebookId) {
 
 				// check public invite,  -Lance.
 				// similar to above with item.participants[i].public
+				*/
 
             }
 

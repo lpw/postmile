@@ -52,6 +52,8 @@ exports.endpoints = [
     { method: 'DELETE', path: '/project/:id/participants',      handler: Project.uninvite,      schema: Project.type.uninvite },
     { method: 'DELETE', path: '/project/:id/participant/:user', handler: Project.uninvite },
     { method: 'POST',   path: '/project/:id/join',              handler: Project.join },
+    { method: 'POST',   path: '/project/:id/copy',              handler: Project.copy },
+    { method: 'POST',   path: '/project/:id/link',              handler: Project.link },
 
     { method: 'GET',    path: '/project/:id/tasks',             handler: Task.list },
     { method: 'GET',    path: '/task/:id',                      handler: Task.get },

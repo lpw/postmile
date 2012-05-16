@@ -5,17 +5,20 @@
 
 // added for testing,  -Lance.
 var Utils = require('./utils');
+var QueryString = require('querystring');
+// var Err = require('./error');
+var Vault = require('./vault');
+var Https = require('https');
 
 // Get home page
 
 exports.get = function (req, res, next) {
 
-	if( false ) {	// just for testing
-		var sr = req.body.signed_request ;
-		var secret = '1205a0b8e085d6061b2a2f71e94125cf' ;
-		var dataFsr = Utils.parse_signed_request( sr, secret );
-		// var dataFsr = Utils.decrypt( secret, sr );
-		console.log( 'Lance home get ' + req.query.request_ids + ' ' + dataFsr ) ;
+	var secret = Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ].clientSecret ;	// clientId implied
+	var fbsr ;	// has user oauth_tokan, more powerful than app access token
+	if( req.body.signed_request && secret ) {	// just for facebook/testing
+		fbsr = Utils.parse_signed_request( req.body.signed_request, secret );	// Utils.decrypt( secret, sr );
+		console.log( 'Lance facebook ' + req.query.request_ids + ' ' + fbsr.user_id + ' ' + fbsr.oauth_token ) ;
 	}
 	
 	if (req.api.profile) {
@@ -38,12 +41,30 @@ exports.get = function (req, res, next) {
 			// for each request
 			for( var ri=0 ; ri < rids.length ; ri++ ) {
 
-				console.log( 'Lance req rid ' + rids[ri] ) ;
+				console.log( 'Lance facebook req rid ' + rids[ri] ) ;
 
 				// get req details from fb
-				
-				// issue share join to api: copy or link
+				Utils.facebookRequest('GET', '/' + rids[ri] + '?' + QueryString.stringify({ oauth_token: /*data.access_token*/fbsr.oauth_token }), null, function (data, err) {	// body null or ''/' '?
 
+					if (data) {
+									
+						console.log( 'Lance facebook req rid ' + rids[ri] + ' worked w ' + data.data ) ;
+						
+						// issue share join to api: copy or link
+						// global.activeProjectId = data.data;
+						// Y.list.list.getAndGoToActiveList() ;
+
+						// delete erquest
+						// FB.api( response.id, 'delete', function(response) {
+							// console.log( 'deleted request for ' + response.id + ' ' + response );
+						// });
+
+					} else {
+						console.log( 'Lance facebook req rid ' + rids[ri] + ' failed w ' + data ) ;
+					}
+				
+				}) ;	
+			
 			}
 				
 		}

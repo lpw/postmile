@@ -9,6 +9,9 @@ var Validator = require('validator');
 var Crypto = require('crypto');
 var Base64 = require('./base64');
 var Log = require('./log');
+// for the facebook util func
+var Https = require('https');	
+var Err = require('./error');
 
 
 // Get current date/time array
@@ -161,4 +164,78 @@ exports.parse_signed_request = function (signed_request, secret) {
 
     return data;
 
+}
+
+// from Login.auth's facebook closure
+exports.facebookRequest = function (method, path, body, callback) {
+
+    var options = {
+        host: 'graph.facebook.com',
+        port: 443,
+        path: path,
+        method: method
+    };
+
+    var hreq = Https.request(options, function (hres) {
+
+        if (hres) {
+
+            var response = '';
+
+            hres.setEncoding('utf8');
+            hres.on('data', function (chunk) {
+
+                response += chunk;
+            });
+
+            hres.on('end', function () {
+
+                var data = null;
+                var error = null;
+
+                try {
+
+                    data = JSON.parse(response);
+                }
+                catch (err) {
+
+                    data = QueryString.parse(response);     // Hack until Facebook fixes their OAuth implementation
+                    // error = 'Invalid response body from Facebook token endpoint: ' + response + '(' + err + ')';
+                }
+
+                if (error === null) {
+
+                    if (hres.statusCode === 200) {
+
+                        callback(data, null);
+                    }
+                    else {
+
+                        callback(null, Err.internal('Facebook returned OAuth error on token request', data));
+                    }
+                }
+                else {
+
+                    callback(null, Err.internal(error));
+                }
+            });
+        }
+        else {
+
+            callback(null, Err.internal('Failed sending Facebook token request'));
+        }
+    });
+
+    hreq.on('error', function (err) {
+
+        callback(null, Err.internal('HTTP socket error', err));
+    });
+
+    if (body !== null) {
+
+        hreq.setHeader('Content-Type', 'application/x-www-form-urlencoded');
+        hreq.write(body);
+    }
+
+    hreq.end();
 }

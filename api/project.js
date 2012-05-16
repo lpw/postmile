@@ -1037,7 +1037,6 @@ exports.load = function (projectId, userId, isWritable, callback, facebookId) {
 
 				// check public invite,  -Lance.
 				// similar to above with item.participants[i].public
-				*/
 
             }
 

@@ -888,6 +888,7 @@ exports.copy = function (request, reply) {
 			// create new project clone but w userId as owner
 		    // project.participants = [{ id: request.userId}];
 			var oldItemId = project._id ;
+			// todo: copy other project details
 			project._id = null ;
 		    project.participants = [{ id: member.id }] ;	// userId
 		
@@ -898,7 +899,7 @@ exports.copy = function (request, reply) {
 		            // Stream.update({ object: 'projects', user: request.userId }, request);
 		            // reply({ status: 'ok', id: items[0]._id }, { created: 'project/' + items[0]._id });
 					project = items[0] ;	// for callback
-				
+
 					// has new participants - copy details?
 				
 					// copy tasks, no details
@@ -906,7 +907,36 @@ exports.copy = function (request, reply) {
 				
 					// mark as copied w new id?
 				
-					console.log( 'Lance project load - copy succeeded from ' + oldItemId + ' to ' + items[0]._id ) ;
+		            Sort.list('task', request.params.id, 'project', function (tasks) {
+
+	                    for (var i = 0, il = tasks.length; i < il; ++i) {
+
+	                        var task = tasks[i] ;
+
+					        task.project = items[0]._id ;	// request.params.id;
+					        task.status = task.status || 'open';	// shouldn't be needed
+							task._id = null ;	// needs to be reset for insert
+							
+					        Db.insert('task', task, function (items, err) {
+
+					            if (err === null) {
+
+									console.log( 'Lance project copy - inserted task ' + items[0]._id + ' ' + tasks.length ) ;
+
+					            }
+					            else {
+
+									console.log( 'Lance project copy - failed to insert tasks ' + err + ' ' + tasks.length ) ;
+
+					            }
+					
+					        });
+
+						}
+						
+		            });
+					
+					console.log( 'Lance project copy succeeded from ' + oldItemId + ' to ' + items[0]._id ) ;					
 					reply({ status: 'ok', id: project._id });
 				
 		        } else {
@@ -921,12 +951,65 @@ exports.copy = function (request, reply) {
 		} else {
 		
 			// todo: throw error
-			console.log( 'Lance error wih shareType not copy or link in participants ' + item.participants[i].id ) ;
-		
+			console.log( 'Lance error wih no project, or shareType not copy or link ' + request.params.id + ' ' + request.userId + ' ' + err ) ;
+			reply(err);
+
 		}
 
     // -Lance. });
-	}, request.params.fbid ) ;
+	}, request.query.fbid ) ;
+	
+};
+
+
+// Accept project fb link invitation
+
+exports.link = function (request, reply) {
+
+    // The only place allowed to request a non-writable copy for modification
+	exports.load(request.params.id, request.userId, false, function (project, member, err) {
+	
+		// we are only loading and checking project to ensure we've been granted permissions to share/load it
+		// at this time, need no info fom project
+		if (project) {
+
+			// Not: Verify user is pending	if (member.isPending) else 'Already a member of the project'
+			// Db.updateCriteria('project', project._id, { 'participants.id': request.userId }, { $unset: { 'participants.$.isPending': 1} }, function (err) {
+			// Stream.update({ object: 'project', project: project._id }, request);
+			// Stream.update({ object: 'projects', user: request.userId }, request);
+
+			console.log( 'Lance linking ' + request.params.id + ' ' + project._id ) ;
+
+			// clear facebookId?
+			// member.facebookId = '' ;
+
+			// todo: update db w member
+			// var participant = { pid: member.pid, display: member.display };
+			Db.updateCriteria('project', request.params.id, { 'participants.facebookId': request.query.fbid }, { $set: { 'participants.$': member } }, function (err) {
+
+				if (err === null) {
+					
+					console.log( 'Lance project link ok ' ) ;
+					reply({ status: 'ok', id: project._id });
+					
+				} else {
+					
+					console.log( 'Lance project link failed with err: ' + err ) ;
+					reply(err);
+					
+				}
+
+			});
+	    
+		} else {
+			
+			console.log( 'Lance error wih no project, or shareType for link ' + request.params.id + ' ' + request.userId + ' ' + err ) ;
+			reply(err);
+
+		}
+
+    // -Lance. });
+	}, request.query.fbid ) ;
 	
 };
 

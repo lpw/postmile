@@ -22,7 +22,12 @@ exports.get = function (req, res, next) {
 		console.log( 'Lance facebook ' + req.query.request_ids + ' ' + fbsr.user_id + ' ' + fbsr.oauth_token ) ;
 	}
 	
-	if (req.api.profile) {
+	if (req.api.profile && fbsr /*&& fbsr.oauth_token*/ && req.api.profile.facebook !== fbsr.user_id) {
+
+		res.api.redirect = '/relogin';
+        next();
+
+	} else if (req.api.profile) {
 
         // res.api.redirect = req.api.profile.view ;
 		// todo: what about request_id's ?
@@ -35,7 +40,7 @@ exports.get = function (req, res, next) {
 		// todo: don't send dacebookId with get and other client-side stuff
 		// finish routes for copy and join
 		// parse and handle request in web home (call fb for details, then api's copy and link
-		if( req.query.request_ids ) {	// fb req,  -Lance.
+		if( req.query.request_ids && fbsr && fbsr.oauth_token && req.api.profile.facebook === fbsr.user_id ) {	// fb req,  -Lance.
 			
 			var rids = req.query.request_ids.split( ',' ) ;
 
@@ -58,7 +63,7 @@ exports.get = function (req, res, next) {
 					
 					if (jsonData && jsonData.src) {
 									
-						console.log( 'Lance facebook req rid ' + data.id + ' requesting ' + jsonData.type + ' of ' + jsonData.src ) ;
+						console.log( 'Lance facebook requesting ' + jsonData.type + ' of ' + jsonData.src ) ;
 						
 						// issue share join to api: copy or link
 						// global.activeProjectId = jsonData;
@@ -107,7 +112,7 @@ exports.get = function (req, res, next) {
 					}
 				
 					// delete request
-					if (data.id) {
+					if (data && data.id) {
 											
 						Utils.facebookRequest('DELETE', '/' + data.id + '?' + QueryString.stringify({ oauth_token: /*data.access_token*/fbsr.oauth_token }), null, function (data, err) {	// body null or ''/' '?
 
@@ -144,11 +149,14 @@ exports.get = function (req, res, next) {
 
         // res.api.view = { template: 'home', locals: locals };
 
-		res.api.redirect = '/auth/guest';
+		// res.api.redirect = '/auth/guest';
 		// don't have to do this here/now as it's part of next's finalizeResponse
 		// res.api.redirect = 'http://' + req.headers.host + '/auth/guest' ;
 		// res.api.redirect = Config.host.uri('web', req) + '/auth/guest',	// added req context for domain/host,  -Lance.
 	
+		// until we refocus on solo website, just use facebook
+		res.api.redirect = '/auth/facebook';
+		
         next();
     }
 };

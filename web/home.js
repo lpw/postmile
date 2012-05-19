@@ -22,13 +22,19 @@ exports.get = function (req, res, next) {
 		console.log( 'Lance facebook ' + req.query.request_ids + ' ' + fbsr.user_id + ' ' + fbsr.oauth_token ) ;
 	}
 	
-	if (req.api.profile && fbsr /*&& fbsr.oauth_token*/ && req.api.profile.facebook !== fbsr.user_id) {
+	console.log( 'Lance facebook before if req.api.profile ' + req.api.profile + ' ' + ( req.api.profile ? req.api.profile.facebook : 'no profile for facebook id' ) ) ;
 
+	// if (req.api.profile && fbsr && fbsr.oauth_token && req.api.profile.facebook !== fbsr.user_id) {
+	// if (req.api.profile && fbsr && req.api.profile.facebook !== fbsr.user_id) {
+	if (req.api.profile && ( !req.api.profile.facebook || !fbsr || !fbsr.user_id || req.api.profile.facebook !== fbsr.user_id ) ) {
+
+		console.log( 'Lance facebook redirecting to /relogin ' ) ;
 		res.api.redirect = '/relogin';
         next();
 
 	} else if (req.api.profile) {
 
+		console.log( 'Lance facebook proessing req.api.profile ' ) ;
         // res.api.redirect = req.api.profile.view ;
 		// todo: what about request_id's ?
         res.api.view = req.api.profile.view ;
@@ -135,6 +141,8 @@ exports.get = function (req, res, next) {
         next();
     }
     else {
+
+				console.log( 'Lance facebook redirecting to /auth/facenbook ' ) ;
 
         var locals = {
 

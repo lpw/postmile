@@ -3,7 +3,10 @@
 * See LICENSE file included with this code project for license terms.
 */
 
+// todo: just do the link here - call Api instead of redirection
+
 // added for testing,  -Lance.
+var Login = require('./login');
 var Api = require('./api');
 var Utils = require('./utils');
 var QueryString = require('querystring');
@@ -26,13 +29,16 @@ exports.get = function (req, res, next) {
 
 	// if (req.api.profile && fbsr && fbsr.oauth_token && req.api.profile.facebook !== fbsr.user_id) {
 	// if (req.api.profile && fbsr && req.api.profile.facebook !== fbsr.user_id) {
-	if (req.api.profile && ( !req.api.profile.facebook || !fbsr || !fbsr.user_id || req.api.profile.facebook !== fbsr.user_id ) ) {
+	// if (req.api.profile && ( !req.api.profile.facebook || !fbsr || !fbsr.user_id || req.api.profile.facebook !== fbsr.user_id ) ) {
+	// if (req.api.profile && fbsr && req.api.profile.facebook && req.api.profile.facebook !== fbsr.user_id ) {
+	if ( false ) {
 
 		console.log( 'Lance facebook redirecting to /relogin ' ) ;
 		res.api.redirect = '/relogin';
         next();
 
-	} else if (req.api.profile) {
+	// } else if (req.api.profile) {
+	} else if (req.api.profile && fbsr && req.api.profile.facebook && /*fbsr.user_id &&*/ req.api.profile.facebook === fbsr.user_id) {
 
 		console.log( 'Lance facebook proessing req.api.profile ' ) ;
         // res.api.redirect = req.api.profile.view ;
@@ -47,102 +53,49 @@ exports.get = function (req, res, next) {
 		// finish routes for copy and join
 		// parse and handle request in web home (call fb for details, then api's copy and link
 		if( req.query.request_ids && fbsr && fbsr.oauth_token && req.api.profile.facebook === fbsr.user_id ) {	// fb req,  -Lance.
-			
-			var rids = req.query.request_ids.split( ',' ) ;
-
-			// for each request
-			for( var ri=0 ; ri < rids.length ; ri++ ) {
-
-				var rid = rids[ri] ;
-				
-				console.log( 'Lance facebook req rid ' + rids[ri] + ' ' + rid ) ;
-
-				// get req details from fb
-				Utils.facebookRequest('GET', '/' + rid + '?' + QueryString.stringify({ oauth_token: /*data.access_token*/fbsr.oauth_token }), null, function (data, err) {	// body null or ''/' '?
-
-					var jsonData ;
-					try {
-						jsonData = data && JSON.parse( data.data ) ;
-					} catch( err ) {
-						jsonData = data && data.data ;
-					}
-					
-					if (jsonData && jsonData.src) {
-									
-						console.log( 'Lance facebook requesting ' + jsonData.type + ' of ' + jsonData.src ) ;
-						
-						// issue share join to api: copy or link
-						// global.activeProjectId = jsonData;
-						// Y.list.list.getAndGoToActiveList() ;
-						
-						if( jsonData.type === 'link' || jsonData.type === 'copy' ) {
-							
-							console.log( 'Lance facebook doing ' + jsonData.type + ' now...' ) ;
-							
-							// Api.clientCall('POST', '/project/' + jsonData.src + '/' + jsonData.type, '', function (result, err, code) {
-							Api.call('POST', '/project/' + jsonData.src + '/' + jsonData.type + '/?fbid=' + fbsr.user_id, '', req.api.session, function (result, err, code) {
-								
-								if( result && result.status === 'ok' && result.id ) {
-
-									console.log( 'Lance facebook did ' + jsonData.type + ' of ' +  jsonData.src + ' with ' + result + ' ' + err + ' ' + code ) ;
-								
-									// delete request moved uotside of conditional to delete even if in error
-								
-									// set active project Id in storage
-									var jsonObject = { value: result.id } ;
-									var json = JSON.stringify( jsonObject ) ;
-									Api.call('POST', '/storage/activeProject', jsonObject, req.api.session, function (result, err, code) {
-								
-										if( result && result.status === 'ok' ) {
-											console.log( 'Lance facebook stored activeProject ' + json + ' with ' + result + ' ' + err + ' ' + code ) ;
-										} else {
-											console.log( 'Lance facebook failed to store activeProject ' + json + ' with ' + result + ' ' + err + ' ' + code ) ;
-										}
-																
-									});
-									
-								} else {
-									
-									console.log( 'Lance facebook failed to ' + jsonData.type + ' of ' +  jsonData.src + ' with ' + result + ' ' + err + ' ' + code ) ;
-								
-								}
-								
-							});
-
-						} else {
-							console.log( 'Lance facebook unkown share type ' + jsonData.type ) ;
-						} 
-						
-					} else {
-						console.log( 'Lance facebook req failed w ' + jsonData ) ;
-					}
-				
-					// delete request
-					if (data && data.id) {
-											
-						Utils.facebookRequest('DELETE', '/' + data.id + '?' + QueryString.stringify({ oauth_token: /*data.access_token*/fbsr.oauth_token }), null, function (data, err) {	// body null or ''/' '?
-
-							console.log( 'Lance facebook deleted request ' + data.id + ' ' + data + ' ' + err ) ;
-
-						});
-				
-					} else {
-						console.log( 'Lance facebook delete req failed without data.id ' + data ) ;
-					}
-					
-					// set active project Id in storage
-								
-				}) ;	
-			
-			}
-				
+			Utils.processFacebookAppRequests( req.query.request_ids.split( ',' ), fbsr.oauth_token, fbsr.user_id, req.api.session ) ;
 		}
 		
         next();
-    }
+
+	} else if (req.api.profile && fbsr && req.api.profile.facebook && /*fbsr.user_id &&*/ req.api.profile.facebook !== fbsr.user_id) {
+
+		console.log( 'Lance facebook redirecting to /relogin ' ) ;
+		res.api.redirect = '/relogin';
+        next();
+
+	} else if( req.api.profile ) {
+		
+		console.log( 'Lance facebook req.api.profile.view ' ) ;
+        res.api.view = req.api.profile.view ;
+        next();
+
+	} else if( fbsr && fbsr.user_id ) {
+		
+		console.log( 'Lance facebook fbsr  w id' ) ;
+		// res.api.redirect = '/auth/facebook';	// I don't think this would keep the fbsr
+		// next();	login will do this if it's passed	
+		req.params.network = 'facebook' ;	// fake this	
+		Login.auth( req, res, next ) ;	// fbsr will be redecrypted from req.body
+
+	} else if( fbsr /* && !fbsr.user_id */ ) {	// but no id, no permissions granted yet to app
+		
+		console.log( 'Lance facebook fbsr but no id' ) ;
+		// res.api.redirect = '/auth/facebook';	// I don't think this would keep the fbsr
+		// next();	login will do this if it's passed	
+		req.params.network = 'facebook' ;	// fake this	
+		Login.auth( req, res, next ) ;	// fbsr will be redecrypted from req.body
+
+	} else if( false ) {
+		
+		console.log( 'Lance facebook login reqd ' ) ;
+		res.api.redirect = '/?login=reqd';
+        next();
+
+	}
     else {
 
-				console.log( 'Lance facebook redirecting to /auth/facenbook ' ) ;
+				console.log( 'Lance facebook redirecting to /auth/facebook ' ) ;
 
         var locals = {
 

@@ -182,7 +182,7 @@ exports.set = function (res, token, callback) {
             res.api.cookie.attributes.push('Secure');
         }
 
-        callback(true, session.restriction);
+        callback(true, session.restriction, session);	// pass back session so we don't have to call again to load,  -Lance.
     }
     else {
 

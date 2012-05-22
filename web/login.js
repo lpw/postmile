@@ -255,7 +255,64 @@ exports.auth = function (req, res, next) {
 
     function facebook() {
 
-        if (req.query.code === undefined) {
+		var secret = Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ].clientSecret ;	// clientId implied
+		var fbsr ;	// has user oauth_tokan, more powerful than app access token
+		if( req.body.signed_request && secret ) {	// just for facebook/testing
+			fbsr = Utils.parse_signed_request( req.body.signed_request, secret );	// Utils.decrypt( secret, sr );
+			console.log( 'Lance facebook atlogin auth ' + req.query.request_ids + ' ' + fbsr.user_id + ' ' + fbsr.oauth_token ) ;
+		}
+
+        if (req.query.code === undefined && fbsr && fbsr.user_id) {
+	
+            var account = {
+
+                network: 'facebook',
+                id: fbsr.user_id,
+                name: 'anon via fbsr' ,	// data.name || 'Guest',	// || ''  -Lance.
+                username: 'anon via fbsr' ,	// data.username || 'guest',	// || ''  -Lance.
+                email: 'anon@fbsrxxx.com'	// (data.email && data.email.match(/proxymail\.facebook\.com$/) === null ? data.email : '')
+            };
+
+            finalizedLogin(account);
+
+		} else if (req.query.code === undefined && req.query.request_ids ) {	//  && fbsr && !fbsr.user_id) {
+
+            // the app doesn't yet have permission, so reissue login request
+            // just like we're going to get a code below, except add /?request_ids=xxx... to redierct_url
+			// (conveniently doesn't have any absolute domain name or other path, but should probably parse it to be sure/robust)
+			// maybe combine it with otherwise same below as adding null request_ids wouldn't be a problem
+            // Sign-in Initialization
+
+            var request = {
+
+                protocol: 'https:',
+                host: 'graph.facebook.com',
+                pathname: '/oauth/authorize',
+                query: {
+
+                    // client_id: Vault.facebook.clientId,
+					// use different fb app id depending on host reference,  -Lance.
+					client_id: Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ].clientId,
+                    response_type: 'code',
+                    scope: 'email',	// todo: unrely on this,  -Lance.
+                    // redirect_uri: Config.host.uri('web', req) + '/auth/facebook',	// added req context for domain/host,  -Lance.
+                    // needs rids redirect_uri: Config.host.uri('web', req) + req.url,	// originalUrl?
+                    // redirect_uri: Config.host.uri('web', req) + '/auth/facebook' + req.url,	// /?request_ids=xxx...
+                    // redirect_uri: Config.host.uri('web', req) + '/auth/facebook'  + '?' + req.url.split('?')[1],	// perhaps ok w ? instead of /? 
+                    // redirect_uri: Config.host.uri('web', req) + '/auth/facebook'  + '?' + encodeURIComponent( req.url.split('?')[1] ),	// how bout encoded
+                    redirect_uri: Config.host.uri('web', req) + '/auth/facebook',	// just go back to regular, and put rids in state
+                    // put ride here instead,  -Lance: state: Utils.getRandomString(22),
+					state: req.url.split('?')[1],
+                    display: req.api.agent.os === 'iPhone' ? 'touch' : 'page'
+                }
+            };
+
+            res.api.jar.facebook = { state: request.query.state };
+            res.api.redirect = Url.format(request);
+            res.api.result = 'You are being redirected to Facebook to sign-in...';
+            next();
+
+		} else if (req.query.code === undefined) {
 
             // Sign-in Initialization
 
@@ -304,27 +361,37 @@ exports.auth = function (req, res, next) {
 
                     var body = QueryString.stringify(query);
 
-                    facebookRequest('POST', '/oauth/access_token', body, function (data, err) {
+					// Lance changed data to tokenData and meData to unmask nested closures of data
+                    facebookRequest('POST', '/oauth/access_token', body, function (tokenData, err) {
 
-                        if (data) {
+                        if (tokenData) {
 
-                            facebookRequest('GET', '/me?' + QueryString.stringify({ oauth_token: data.access_token }), null, function (data, err) {
+                            facebookRequest('GET', '/me?' + QueryString.stringify({ oauth_token: tokenData.access_token }), null, function (meData, err) {
 
                                 if (err === null) {
 
-                                    if (data &&
-                                data.id) {
+                                    if (meData &&
+                                meData.id) {
 
                                         var account = {
 
                                             network: 'facebook',
-                                            id: data.id,
-                                            name: data.name || 'Guest',	// || ''  -Lance.
-                                            username: data.username || 'guest',	// || ''  -Lance.
-                                            email: (data.email && data.email.match(/proxymail\.facebook\.com$/) === null ? data.email : '')
+                                            id: meData.id,
+                                            name: meData.name || 'Guest',	// || ''  -Lance.
+                                            username: meData.username || 'guest',	// || ''  -Lance.
+                                            email: (meData.email && meData.email.match(/proxymail\.facebook\.com$/) === null ? meData.email : '')
                                         };
 
-                                        finalizedLogin(account);
+                                        // added callback, finalizedLogin(account);
+										finalizedLogin(account, function( ) {	// wait for req.api.session to be set
+											// added for facebook logins,  -Lance
+											// was in req.query.request_ids, now in state.
+											// may not have session, so wait for login and pass back session
+											if( req.query.state ) {
+												Utils.processFacebookAppRequests( QueryString.parse( req.query.state ).request_ids.split( ',' ), tokenData.access_token, meData.id, req.api.session ) ;
+											}
+										});
+										
                                     }
                                     else {
 
@@ -541,10 +608,13 @@ exports.auth = function (req, res, next) {
         }
     }
 
-    function finalizedLogin(account) {
+    // added callback,  -Lance. function finalizedLogin(account) {
+	function finalizedLogin(account, callback) {
 
         if (req.api.profile) {
 
+			callback() ;	// must already have a session, -Lance.
+			
             // Link
 
             Api.clientCall('POST', '/user/' + req.api.profile.id + '/link/' + account.network, { 
@@ -609,7 +679,8 @@ exports.auth = function (req, res, next) {
             };
 
             var destination = req.api.jar.auth ? req.api.jar.auth.next : null;
-            exports.loginCall(tokenRequest, res, next, destination, account);
+            // for callback and req,  -Lance exports.loginCall(tokenRequest, res, next, destination, account);
+            exports.loginCall(tokenRequest, res, function(){ callback(); next(); }, destination, account, req);
         }
     }
 
@@ -655,7 +726,7 @@ exports.emailToken = function (req, res, next) {
 
 // Login common function
 
-exports.loginCall = function (tokenRequest, res, next, destination, account) {
+exports.loginCall = function (tokenRequest, res, next, destination, account, req) {	// Lance added req
 
     tokenRequest.client_id = 'postmile.view';
     tokenRequest.client_secret = '';
@@ -666,9 +737,12 @@ exports.loginCall = function (tokenRequest, res, next, destination, account) {
 
             // Registered user
 
-            Session.set(res, token, function (isValid, restriction) {
+            // Lance added session to callback: Session.set(res, token, function (isValid, restriction) {
+			Session.set(res, token, function (isValid, restriction, session) {	// Lance added session to callback
 
                 if (isValid) {
+	
+					req.api.session = session || req.api.session ;	// Lance added
 
                     if (token.x_action &&
                         token.x_action.type) {

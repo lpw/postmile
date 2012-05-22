@@ -12,7 +12,8 @@ var Log = require('./log');
 // for the facebook util func
 var Https = require('https');	
 var Err = require('./error');
-
+var Api = require('./api');	// for processFacebookAppRequest
+var QueryString = require('querystring');	// for processFacebookAppRequest
 
 // Get current date/time array
 
@@ -166,7 +167,7 @@ exports.parse_signed_request = function (signed_request, secret) {
 
 }
 
-// from Login.auth's facebook closure
+// from Login.auth's facebook closure - maybe todo, bring this into app request closure
 exports.facebookRequest = function (method, path, body, callback) {
 
     var options = {
@@ -238,4 +239,99 @@ exports.facebookRequest = function (method, path, body, callback) {
     }
 
     hreq.end();
+}
+
+// from Login.auth's facebook closure
+exports.processFacebookAppRequests = function (rids, token, uid, session) {
+
+	// var rids = req.query.request_ids.split( ',' ) ;
+
+	console.log( 'Lance processFacebookAppRequests number:' + rids.length + ' uid:' + uid + ' token:' + token + ' session:' + session ) ;
+
+	// for each request
+	for( var ri=0 ; ri < rids.length ; ri++ ) {
+
+		var rid = rids[ri] ;
+	
+		console.log( 'Lance facebook req rid ' + rids[ri] + ' ' + rid ) ;
+
+		// get req details from fb
+		exports.facebookRequest('GET', '/' + rid + '?' + QueryString.stringify({ oauth_token: /*data.access_token*//*fbsr.oauth_token*/token }), null, function (data, err) {	// body null or ''/' '?
+
+			var jsonData ;
+			try {
+				jsonData = data && JSON.parse( data.data ) ;
+			} catch( err ) {
+				jsonData = data && data.data ;
+			}
+		
+			if (jsonData && jsonData.src) {
+						
+				console.log( 'Lance facebook requesting ' + jsonData.type + ' of ' + jsonData.src ) ;
+			
+				// issue share join to api: copy or link
+				// global.activeProjectId = jsonData;
+				// Y.list.list.getAndGoToActiveList() ;
+			
+				if( jsonData.type === 'link' || jsonData.type === 'copy' ) {
+				
+					console.log( 'Lance facebook doing ' + jsonData.type + ' now...' ) ;
+				
+					// Api.clientCall('POST', '/project/' + jsonData.src + '/' + jsonData.type, '', function (result, err, code) {
+					Api.call('POST', '/project/' + jsonData.src + '/' + jsonData.type + '/?fbid=' + /*fbsr.user_id*/uid, '', /*req.api.*/session, function (result, err, code) {
+					
+						if( result && result.status === 'ok' && result.id ) {
+
+							console.log( 'Lance facebook did ' + jsonData.type + ' of ' +  jsonData.src + ' with ' + result + ' ' + err + ' ' + code ) ;
+					
+							// delete request moved uotside of conditional to delete even if in error
+					
+							// set active project Id in storage
+							var jsonObject = { value: result.id } ;
+							var json = JSON.stringify( jsonObject ) ;
+							Api.call('POST', '/storage/activeProject', jsonObject, /*req.api.*/session, function (result, err, code) {
+					
+								if( result && result.status === 'ok' ) {
+									console.log( 'Lance facebook stored activeProject ' + json + ' with ' + result + ' ' + err + ' ' + code ) ;
+								} else {
+									console.log( 'Lance facebook failed to store activeProject ' + json + ' with ' + result + ' ' + err + ' ' + code ) ;
+								}
+													
+							});
+						
+						} else {
+						
+							console.log( 'Lance facebook failed to ' + jsonData.type + ' of ' +  jsonData.src + ' with ' + result + ' ' + err + ' ' + code ) ;
+					
+						}
+					
+					});
+
+				} else {
+					console.log( 'Lance facebook unkown share type ' + jsonData.type ) ;
+				} 
+			
+			} else {
+				console.log( 'Lance facebook req failed w ' + jsonData ) ;
+			}
+	
+			// delete request
+			if (data && data.id) {
+								
+				exports.facebookRequest('DELETE', '/' + data.id + '?' + QueryString.stringify({ oauth_token: /*data.access_token*//*fbsr.oauth_token*/token }), null, function (data, err) {	// body null or ''/' '?
+
+					console.log( 'Lance facebook deleted request ' + data.id + ' ' + data + ' ' + err ) ;
+
+				});
+	
+			} else {
+				console.log( 'Lance facebook delete req failed without data.id ' + data ) ;
+			}
+		
+			// set active project Id in storage
+					
+		}) ;	
+
+	}
+	
 }

@@ -684,7 +684,13 @@ exports.auth = function (req, res, next) {
 
             var destination = req.api.jar.auth ? req.api.jar.auth.next : null;
             // for callback and req,  -Lance exports.loginCall(tokenRequest, res, next, destination, account);
-            exports.loginCall(tokenRequest, res, function(){ callback(); next(); }, destination, account, req);
+			function doCallbackAndNext(){ 
+				if( callback ) {
+					callback(); 
+				}
+				next(); 
+			}
+            exports.loginCall(tokenRequest, res, doCallbackAndNext, destination, account, req);
         }
     }
 

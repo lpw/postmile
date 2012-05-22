@@ -294,7 +294,7 @@ exports.auth = function (req, res, next) {
 					// use different fb app id depending on host reference,  -Lance.
 					client_id: Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ].clientId,
                     response_type: 'code',
-                    // scope: 'email',	// unrely on this,  -Lance.
+                    scope: 'email',	// unrely on this (but something is requireed to API, and it doesn't seem to get rid of auth dialog),  -Lance.
                     // redirect_uri: Config.host.uri('web', req) + '/auth/facebook',	// added req context for domain/host,  -Lance.
                     // needs rids redirect_uri: Config.host.uri('web', req) + req.url,	// originalUrl?
                     // redirect_uri: Config.host.uri('web', req) + '/auth/facebook' + req.url,	// /?request_ids=xxx...

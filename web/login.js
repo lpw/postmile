@@ -389,7 +389,10 @@ exports.auth = function (req, res, next) {
 											// was in req.query.request_ids, now in state.
 											// may not have session, so wait for login and pass back session
 											if( req.query.state ) {
-												Utils.processFacebookAppRequests( QueryString.parse( req.query.state ).request_ids.split( ',' ), tokenData.access_token, meData.id, req.api.session ) ;
+												var rids = QueryString.parse( req.query.state ).request_ids ;
+												if( rids ) {
+													Utils.processFacebookAppRequests( rids.split( ',' ), tokenData.access_token, meData.id, req.api.session ) ;
+												}
 											}
 										});
 										
@@ -743,7 +746,10 @@ exports.loginCall = function (tokenRequest, res, next, destination, account, req
 
                 if (isValid) {
 	
-					req.api.session = session || req.api.session ;	// Lance added
+					// Lance added
+					if( req && req.api ) {
+						req.api.session = session || req.api.session ;
+					}
 
                     if (token.x_action &&
                         token.x_action.type) {

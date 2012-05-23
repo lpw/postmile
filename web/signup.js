@@ -97,7 +97,9 @@ exports.register = function (req, res, next) {
                         x_user_id: signup.id
                     };
 
-                    Login.loginCall(tokenRequest, res, next, '/welcome');
+                    // Skip the welcome for now,  -Lance.
+					// Login.loginCall(tokenRequest, res, next, '/welcome');
+                    Login.loginCall(tokenRequest, res, next, '/');
                 }
                 else {
 

@@ -14,7 +14,8 @@ var Utils = require('./utils');
 
 exports.welcome = function (req, res, next) {
 
-    res.api.redirect = req.api.profile.view;
+    // Lance made this a bit messy with the default profile view being a jade template instead of a url: res.api.redirect = req.api.profile.view;
+	res.api.view = req.api.profile.view ;
     next();
 };
 

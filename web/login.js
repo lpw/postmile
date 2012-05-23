@@ -51,6 +51,7 @@ exports.login = function (req, res, next) {
             // res.api.redirect = '/tos' + (req.query.next && req.query.next.charAt(0) === '/' ? '?next=' + encodeURIComponent(req.query.next) : '');
             // next();
 			// Lance - just post a faux acceptance for now and save the redirect until we have maningful tos
+			// which I could just force it without token refresh drama (but won't get on api/data-model side): req.api.session.tos = Tos.minimumTOS ;
 		    Api.clientCall('POST', '/user/' + req.api.profile.id + '/tos/' + Tos.currentTOS, '', function (result, err, code) {
 
 		        // Refresh token
@@ -58,15 +59,23 @@ exports.login = function (req, res, next) {
 		        Session.refresh(req, res, req.api.session, function (session, err) {
 
 					// if we're redirecting just to refresh the cookies, let's find another way
-		            res.api.redirect = '/tos' + (req.body.next ? '?next=' + encodeURIComponent(req.body.next) : '');
+		            // res.api.redirect = '/tos' + (req.body.next ? '?next=' + encodeURIComponent(req.body.next) : '');
+					console.log( 'TOS refresh 1 ' + ( req.api.session.id === session.id ) + ' ' + ( req.api.session === session ) + ' ' + req.api.session.id + ' ' + session.id ) ;
+					req.api.session = session ;	// refreshedw new tos
 		            next();
+
 		        });
 		    });
-
+			
         }
         else {
 
-            res.api.redirect = req.query.next || req.api.profile.view;
+            // Lance made this a bit messy with the default profile view being a jade template instead of a url: res.api.redirect = req.query.next || req.api.profile.view;
+			if( res.query.next ) {
+				res.api.redirect = req.query.next ;
+			} else {
+				res.api.view = req.api.profile.view ;
+			}
             next();
         }
     }
@@ -798,8 +807,42 @@ exports.loginCall = function (tokenRequest, res, next, destination, account, req
                     if (restriction === 'tos' &&
                         (destination === null || destination.indexOf('/account') !== 0)) {
 
-                        res.api.redirect = '/tos' + (destination ? '?next=' + encodeURIComponent(destination) : '');
-                        next();
+						// Lance - just post a faux acceptance for now and save the redirect until we have maningful tos
+                        // res.api.redirect = '/tos' + (destination ? '?next=' + encodeURIComponent(destination) : '');
+                        // next();
+
+						// would be nice to just redirect to and do it in login, but we've got the next callback to make for linking/copying any facebook request_ids
+						// kres.api.redirect = '/login';	// what about calling exports.login ?
+						// next();
+
+						// which I could just force it without token refresh drama (but won't get on api/data-model side): req.api.session.tos = Tos.minimumTOS ;
+						// need to get an id from profile first
+						// do it like loadProfile in session.js
+						
+						Api.call('GET', '/profile', null, session, function (result, err, code) {
+								
+							req.api.session = session;
+							req.api.profile = result ;	// profile;
+							
+							if (req.api.profile && req.api.profile.id) {
+
+								Api.clientCall('POST', '/user/' + req.api.profile.id + '/tos/' + Tos.currentTOS, '', function (result, err, code) {
+
+									// Refresh token
+									Session.refresh(req, res, req.api.session, function (session, err) {
+										// if we're redirecting just to refresh the cookies, let's find another way
+										// res.api.redirect = '/tos' + (req.body.next ? '?next=' + encodeURIComponent(req.body.next) : '');
+										console.log( 'TOS refresh 2 ' + ( req.api.session === session ) + ' ' + req.api.session + ' ' + session ) ;
+										req.api.session = session;
+		                        		res.api.redirect = '/';
+										next();
+									});
+								});
+							} else {
+								next() ;
+							}
+						});
+
                     }
                     else {
 
@@ -848,6 +891,7 @@ exports.loginCall = function (tokenRequest, res, next, destination, account, req
 
 				    // Login new user
 
+					// passed-in, and not used when passsed-in again?
 				    var tokenRequest = {
 
 					grant_type: 'http://ns.postmile.net/' + account.network,
@@ -856,7 +900,7 @@ exports.loginCall = function (tokenRequest, res, next, destination, account, req
 
 					console.log( 'Lance PUT /user ok, calling loginCall ' ) ;
 
-				    exports.loginCall(tokenRequest, res, next, '/welcome');	// welcome instead of view?
+				    exports.loginCall(tokenRequest, res, next, '/', account, req);	// /welcome instead of view? - just go direct for now, include account & req
 
 					console.log( 'Lance PUT /user ok after loginCall, redirecting' ) ;
 

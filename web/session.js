@@ -98,15 +98,17 @@ exports.refresh = function (req, res, session, callback) {
 
             if (token) {
 
-                exports.set(res, token, function (isValid, restrictions) {
+                exports.set(res, token, function (isValid, restrictions, session) {	// Lance added session, needed for callbacks (or could just update req)
 
                     if (isValid) {
 
-                        callback(null);
+                        // Lance added session callback(null);
+                        callback(session, null);
                     }
                     else {
 
-                        callback(Err.internal('Invalid response parameters from API server'));
+                        // Lance added session callback(Err.internal('Invalid response parameters from API server'));
+                        callback(session, Err.internal('Invalid response parameters from API server'));
                     }
                 });
             }
@@ -117,17 +119,20 @@ exports.refresh = function (req, res, session, callback) {
                 exports.clear(res);
 
                 // fix undef -Lance.  callback(Err.badRequest(errorMessage));
-                callback(Err.badRequest(err.error));
+                // Lance added session callback(Err.badRequest(err.error));
+                callback(session, Err.badRequest(err.error));
             }
             else {
 
-                callback(Err.internal('Unexpected API response', err));
+                // Lance added session callback(Err.internal('Unexpected API response', err));
+                callback(session, Err.internal('Unexpected API response', err));
             }
         });
     }
     else {
 
-        callback(Err.internal('Session missing refresh data', session));
+        // Lance added session callback(Err.internal('Session missing refresh data', session));
+        callback(session, Err.internal('Session missing refresh data', session));
     }
 };
 

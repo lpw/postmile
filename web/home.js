@@ -52,8 +52,43 @@ exports.get = function (req, res, next) {
 		// todo: don't send dacebookId with get and other client-side stuff
 		// finish routes for copy and join
 		// parse and handle request in web home (call fb for details, then api's copy and link
+		/* facebook is no longer giving us request_ids query parameter
 		if( req.query.request_ids && fbsr && fbsr.oauth_token && req.api.profile.facebook === fbsr.user_id ) {	// fb req,  -Lance.
 			Utils.processFacebookAppRequests( req.query.request_ids.split( ',' ), fbsr.oauth_token, fbsr.user_id, req.api.session ) ;
+		}
+		*/
+		if( fbsr && fbsr.oauth_token && req.api.profile.facebook === fbsr.user_id ) {
+			
+			if( req.query.request_ids ) {
+				Utils.processFacebookAppRequests( req.query.request_ids.split( ',' ), fbsr.oauth_token, fbsr.user_id, req.api.session ) ;
+			} else {
+
+				// Utils.queryAndProcessFacebookAppRequests( fbsr.oauth_token, fbsr.user_id, req.api.session ) ;
+
+				Api.call('POST', '/projects/fbr' + '?fbid=' + fbsr.user_id, '', req.api.session, function (result, err, code) {
+
+					if( result && result.status === 'ok' && result.id ) {
+
+						console.log( 'Lance fbr succeeded with ' + result.id + ' ' + err + ' ' + code ) ;
+
+						// set active project Id in storage
+						var jsonObject = { value: result.id } ;
+						var json = JSON.stringify( jsonObject ) ;
+						Api.call('POST', '/storage/activeProject', jsonObject, req.api.session, function (result, err, code) {
+				
+							if( result && result.status === 'ok' ) {
+								console.log( 'Lance fbr stored activeProject ' + json + ' with ' + result + ' ' + err + ' ' + code ) ;
+							} else {
+								console.log( 'Lance fbr failed to store activeProject ' + json + ' with ' + result + ' ' + err + ' ' + code ) ;
+							}
+												
+						});
+
+					} else {
+						console.log( 'Lance fbr failed with ' + err + ' ' + code ) ;
+					}
+				});
+			}
 		}
 		
         next();

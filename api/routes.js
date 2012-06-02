@@ -42,7 +42,8 @@ exports.endpoints = [
     { method: 'DELETE', path: '/user',                          handler: User.del,              scope: 'quit', tos: 'none' },
 
     { method: 'GET',    path: '/projects',                      handler: Project.list },
-    { method: 'GET',    path: '/project/:id/:fbid?',                   handler: Project.get },	// todo: query instead; schema not available w GET (could instead load from db on server) schema: Project.type.getFacebook },	// need getFacebook for id?  -Lance.
+    { method: 'POST',   path: '/projects/fbr',                  handler: Project.fbr,	query: ['fbid'] },	// now that facebook isn't passing request_ids query parameter to us, we have to find them on our own,  -Lance.
+    { method: 'GET',    path: '/project/:id/:fbid?',            handler: Project.get },	// todo: query instead; schema not available w GET (could instead load from db on server) schema: Project.type.getFacebook },	// need getFacebook for id?  -Lance.
     { method: 'POST',   path: '/project/:id',                   handler: Project.post,          query: ['position'], schema: Project.type.post },
     { method: 'PUT',    path: '/project',                       handler: Project.put,           schema: Project.type.put },
     { method: 'DELETE', path: '/project/:id',                   handler: Project.del },
@@ -52,8 +53,8 @@ exports.endpoints = [
     { method: 'DELETE', path: '/project/:id/participants',      handler: Project.uninvite,      schema: Project.type.uninvite },
     { method: 'DELETE', path: '/project/:id/participant/:user', handler: Project.uninvite },
     { method: 'POST',   path: '/project/:id/join',              handler: Project.join },
-    { method: 'POST',   path: '/project/:id/copy',              handler: Project.copy,	query: ['fbid'], },
-    { method: 'POST',   path: '/project/:id/link',              handler: Project.link },
+    { method: 'POST',   path: '/project/:id/copy',              handler: Project.copy,	query: ['fbid'] },
+    { method: 'POST',   path: '/project/:id/link',              handler: Project.link,	query: ['fbid'] },
 
     { method: 'GET',    path: '/project/:id/tasks',             handler: Task.list },
     { method: 'GET',    path: '/task/:id',                      handler: Task.get },

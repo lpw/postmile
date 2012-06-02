@@ -150,6 +150,20 @@ exports.list = function (request, reply) {
 };
 
 
+// now that facebook isn't passing request_ids query parameter to us, we have to find them on our own
+/* now doing it all here w fbr
+exports.listFacebookRequestedProjects = function (request, reply) {
+    exports.unsortedFacebookRequestList( request.query.fbid, function (projects, error) {
+        if (projects) {
+			reply(projects);
+        } else {
+            reply(Hapi.Error.notFound());
+        }
+    });
+};
+*/
+
+
 // Update project properties
 
 exports.post = function (request, reply) {
@@ -870,13 +884,20 @@ exports.join = function (request, reply) {
     });
 };
 
-
 // Accept project fb copy invitation
 
 exports.copy = function (request, reply) {
+	
+	internals.copy( request.params.id, request.userId, request.query.fbid, reply ) ;
+	
+};
+
+// internals for Accept project fb copy invitation
+
+internals.copy = function (projectId, userId, facebookId, reply) {
 
     // The only place allowed to request a non-writable copy for modification
-    exports.load(request.params.id, request.userId, false, function (project, member, err) {
+    exports.load(projectId, userId, false, function (project, member, err) {
 
         if (project) {
 
@@ -884,6 +905,23 @@ exports.copy = function (request, reply) {
 			// Db.updateCriteria('project', project._id, { 'participants.id': request.userId }, { $unset: { 'participants.$.isPending': 1} }, function (err) {
 			// Stream.update({ object: 'project', project: project._id }, request);
 			// Stream.update({ object: 'projects', user: request.userId }, request);
+
+			// update db w already-shared member
+			// var participant = { pid: member.pid, display: member.display };
+			// todo: just delete this participant
+			member.facebookId = '' ;	// null ok?
+			member.shareType = '' ;	// null ok?
+			// member.display = '' ;	// null ok?
+			// member.id = '' ;	// null ok?
+			Db.updateCriteria('project', projectId, { 'participants.facebookId': facebookId }, { $set: { 'participants.$': /*member*/{} } }, function (err) {
+				if (err === null) {
+					console.log( 'Lance project copy deshared ok ' ) ;
+					// reply && reply({ status: 'ok', id: project._id });
+				} else {
+					console.log( 'Lance project copy deshared failed with err: ' + err ) ;
+					// reply && reply(err);
+				}
+			});
 
 			// create new project clone but w userId as owner
 		    // project.participants = [{ id: request.userId}];
@@ -907,13 +945,13 @@ exports.copy = function (request, reply) {
 				
 					// mark as copied w new id?
 				
-		            Sort.list('task', request.params.id, 'project', function (tasks) {
+		            Sort.list('task', projectId, 'project', function (tasks) {
 
 	                    for (var i = 0, il = tasks.length; i < il; ++i) {
 
 	                        var task = tasks[i] ;
 
-					        task.project = items[0]._id ;	// request.params.id;
+					        task.project = items[0]._id ;	// projectId;
 					        task.status = task.status || 'open';	// shouldn't be needed
 							task._id = null ;	// needs to be reset for insert
 							
@@ -937,12 +975,12 @@ exports.copy = function (request, reply) {
 		            });
 					
 					console.log( 'Lance project copy succeeded from ' + oldItemId + ' to ' + items[0]._id ) ;					
-					reply({ status: 'ok', id: project._id });
+					reply && reply({ status: 'ok', id: project._id });
 				
 		        } else {
 
 					console.log( 'Lance project load - copy failed from ' + oldItemId + ' with ' + err ) ;
-					reply(err);
+					reply && reply(err);
 
 		        }
 	
@@ -951,13 +989,13 @@ exports.copy = function (request, reply) {
 		} else {
 		
 			// todo: throw error
-			console.log( 'Lance error wih no project, or shareType not copy or link ' + request.params.id + ' ' + request.userId + ' ' + err ) ;
-			reply(err);
+			console.log( 'Lance error wih no project, or shareType not copy or link ' + projectId + ' ' + userId + ' ' + err ) ;
+			reply && reply(err);
 
 		}
 
     // -Lance. });
-	}, request.query.fbid ) ;
+	}, facebookId ) ;
 	
 };
 
@@ -965,9 +1003,17 @@ exports.copy = function (request, reply) {
 // Accept project fb link invitation
 
 exports.link = function (request, reply) {
+	
+	internals.link( request.params.id, request.userId, request.query.fbid, reply ) ;
+	
+};
+
+// internals for Accept project fb link invitation
+
+internals.link = function (projectId, userId, facebookId, reply) {
 
     // The only place allowed to request a non-writable copy for modification
-	exports.load(request.params.id, request.userId, false, function (project, member, err) {
+	exports.load(projectId, userId, false, function (project, member, err) {
 	
 		// we are only loading and checking project to ensure we've been granted permissions to share/load it
 		// at this time, need no info fom project
@@ -978,24 +1024,27 @@ exports.link = function (request, reply) {
 			// Stream.update({ object: 'project', project: project._id }, request);
 			// Stream.update({ object: 'projects', user: request.userId }, request);
 
-			console.log( 'Lance linking ' + request.params.id + ' ' + project._id ) ;
+			console.log( 'Lance linking ' + projectId + ' ' + project._id ) ;
 
 			// clear facebookId?
 			// member.facebookId = '' ;
 
-			// todo: update db w member
+			// update db w already-shared member
 			// var participant = { pid: member.pid, display: member.display };
-			Db.updateCriteria('project', request.params.id, { 'participants.facebookId': request.query.fbid }, { $set: { 'participants.$': member } }, function (err) {
+			member.facebookId = '' ;	// null ok?
+			member.shareType = '' ;	// null ok?
+			// member.display = ?
+			Db.updateCriteria('project', projectId, { 'participants.facebookId': facebookId }, { $set: { 'participants.$': member } }, function (err) {
 
 				if (err === null) {
 					
 					console.log( 'Lance project link ok ' ) ;
-					reply({ status: 'ok', id: project._id });
+					reply && reply({ status: 'ok', id: project._id });
 					
 				} else {
 					
 					console.log( 'Lance project link failed with err: ' + err ) ;
-					reply(err);
+					reply && reply(err);
 					
 				}
 
@@ -1003,13 +1052,13 @@ exports.link = function (request, reply) {
 	    
 		} else {
 			
-			console.log( 'Lance error wih no project, or shareType for link ' + request.params.id + ' ' + request.userId + ' ' + err ) ;
-			reply(err);
+			console.log( 'Lance error wih no project, or shareType for link ' + projectId + ' ' + userId + ' ' + err ) ;
+			reply && reply(err);
 
 		}
 
     // -Lance. });
-	}, request.query.fbid ) ;
+	}, facebookId ) ;
 	
 };
 
@@ -1509,6 +1558,102 @@ exports.unsortedList = function (userId, callback) {
         else {
 
             callback(null, null, null, err);
+        }
+    });
+};
+
+
+/* now that facebook isn't passing request_ids query parameter to us, we have to find them on our own
+exports.unsortedFacebookRequestList = function (facebookId, callback) {
+    Db.query('project', { 'participants.facebookId': facebookId }, function (projects, err) {
+        if (err === null) {
+            if (projects.length > 0) {
+                callback(projects, null);
+            } else {
+                callback([], null);
+            }
+        } else {
+            callback(null, err);
+        }
+    });
+};
+*/
+
+// now that facebook isn't passing request_ids query parameter to us, we have to find them on our own
+
+exports.fbr = function (request, reply) {
+	
+	internals.fbr( request.userId, request.query.fbid, reply ) ;
+
+};
+
+internals.fbr = function (userId, facebookId, reply) {
+
+    Db.query('project', { 'participants.facebookId': facebookId }, function (projects, err) {
+
+        if (err === null) {
+
+            if (projects.length > 0) {
+
+                // var owner = [];
+                // var notOwner = [];
+
+				var replied ;
+				var waitToReply = 0 ;
+				var badShares = 0 ;
+				function oneReply( status, error ) {
+					if( !replied ) {
+						reply( status, error ) ;
+						replied = true ;
+					}
+					// oneReply = null ;.
+				}
+	
+                for (var i = 0, il = projects.length; i < il; ++i) {
+
+					var project = projects[i] ;
+					
+                    for (var p = 0, pl = project.participants.length; p < pl; ++p) {
+
+						var participant = project.participants[p] ;
+                        if (participant.facebookId &&
+                            participant.facebookId === facebookId) {
+
+							if( participant.shareType === 'copy' ) {
+								waitToReply++ ;
+								internals.copy( project._id, userId, facebookId, oneReply ) ;
+							} else if( participant.shareType === 'link' ) {
+								waitToReply++ ;
+								internals.link( project._id, userId, facebookId, oneReply ) ;
+							} else {
+								badShares++ ;
+								console.log( 'Project::internals.processFacebookRequests: unkown shareType ' + participant.shareType ) ;
+							}
+							
+
+                        }
+                    }
+                }
+
+				// this is returning ok before the copy/link shares have finished, successfully or not.
+                // might not yet have correct copy id:
+				// reply && reply({ status: 'ok', id: projects[0]._id }, null);	// todo: choose based on time?
+				if( waitToReply > 0 ) {
+					;
+				} else if( badShares > 0 ) {
+					reply(Hapi.Error.badRequest('Project::internals.fbr: unkown shareType '));
+				} else {
+					reply(Hapi.Error.badRequest('Project::internals.fbr: no facebookId matches in shares '));
+				}
+            }
+            else {
+
+            	reply && reply(Hapi.Error.notFound());
+            }
+        }
+        else {
+
+            reply && reply(err);
         }
     });
 };

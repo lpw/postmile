@@ -1598,15 +1598,18 @@ internals.fbr = function (userId, facebookId, reply) {
                 // var owner = [];
                 // var notOwner = [];
 
-				var replied ;
-				var waitToReply = 0 ;
+				// this is all so we can reply to the last share request (instead of the first) which is probably most recent, prob a better way
+				var waitToReply = true ;
+				var numRequests = 0 ;
 				var badShares = 0 ;
+				var oneReplyCalls = 0 ;
 				function oneReply( status, error ) {
-					if( !replied ) {
-						reply( status, error ) ;
-						replied = true ;
-					}
 					// oneReply = null ;.
+					// if( !replied ) { reply( status, error ) ; replied = true ; }
+					// theOneReply = status ;	// ignore error - it's in status
+					if( !waitToReply && ++oneReplyCalls >= numRequests ) {	// pre-inc expr for comp
+						reply( status, error ) ;
+					}
 				}
 	
                 for (var i = 0, il = projects.length; i < il; ++i) {
@@ -1620,10 +1623,10 @@ internals.fbr = function (userId, facebookId, reply) {
                             participant.facebookId === facebookId) {
 
 							if( participant.shareType === 'copy' ) {
-								waitToReply++ ;
+								numRequests++ ;
 								internals.copy( project._id, userId, facebookId, oneReply ) ;
 							} else if( participant.shareType === 'link' ) {
-								waitToReply++ ;
+								numRequests++ ;
 								internals.link( project._id, userId, facebookId, oneReply ) ;
 							} else {
 								badShares++ ;
@@ -1635,10 +1638,13 @@ internals.fbr = function (userId, facebookId, reply) {
                     }
                 }
 
+				// just in case a callback happens before we finish iterating through the copy/link share requests
+				waitToReply = false ;
+				
 				// this is returning ok before the copy/link shares have finished, successfully or not.
                 // might not yet have correct copy id:
 				// reply && reply({ status: 'ok', id: projects[0]._id }, null);	// todo: choose based on time?
-				if( waitToReply > 0 ) {
+				if( numRequests > 0 ) {
 					;
 				} else if( badShares > 0 ) {
 					reply(Hapi.Error.badRequest('Project::internals.fbr: unkown shareType '));

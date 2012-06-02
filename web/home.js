@@ -37,8 +37,14 @@ exports.get = function (req, res, next) {
 		res.api.redirect = '/relogin';
         next();
 
+	} else if (req.api.profile && fbsr && req.api.profile.facebook && /*fbsr.user_id &&*/ req.api.profile.facebook !== fbsr.user_id) {
+
+		console.log( 'Lance facebook redirecting to /relogin ' ) ;
+		res.api.redirect = '/relogin';
+        next();
+
 	// } else if (req.api.profile) {
-	} else if (req.api.profile && fbsr && req.api.profile.facebook && /*fbsr.user_id &&*/ req.api.profile.facebook === fbsr.user_id) {
+	} else if (req.api.profile && req.api.profile.facebook ) {
 
 		console.log( 'Lance facebook proessing req.api.profile ' ) ;
         // res.api.redirect = req.api.profile.view ;
@@ -57,46 +63,40 @@ exports.get = function (req, res, next) {
 			Utils.processFacebookAppRequests( req.query.request_ids.split( ',' ), fbsr.oauth_token, fbsr.user_id, req.api.session ) ;
 		}
 		*/
-		if( fbsr && fbsr.oauth_token && req.api.profile.facebook === fbsr.user_id ) {
+		if( fbsr && fbsr.oauth_token && req.query.request_ids /*we already know this from above&& req.api.profile.facebook === fbsr.user_id*/ ) {
 			
-			if( req.query.request_ids ) {
-				Utils.processFacebookAppRequests( req.query.request_ids.split( ',' ), fbsr.oauth_token, fbsr.user_id, req.api.session ) ;
-			} else {
+			Utils.processFacebookAppRequests( req.query.request_ids.split( ',' ), fbsr.oauth_token, fbsr.user_id, req.api.session ) ;
+			
+		} else {
 
-				// Utils.queryAndProcessFacebookAppRequests( fbsr.oauth_token, fbsr.user_id, req.api.session ) ;
+			// Utils.queryAndProcessFacebookAppRequests( fbsr.oauth_token, fbsr.user_id, req.api.session ) ;
 
-				Api.call('POST', '/projects/fbr' + '?fbid=' + fbsr.user_id, '', req.api.session, function (result, err, code) {
+			Api.call('POST', '/projects/fbr' + '?fbid=' + req.api.profile.facebook, '', req.api.session, function (result, err, code) {
 
-					if( result && result.status === 'ok' && result.id ) {
+				if( result && result.status === 'ok' && result.id ) {
 
-						console.log( 'Lance fbr succeeded with ' + result.id + ' ' + err + ' ' + code ) ;
+					console.log( 'Lance fbr successfully processed requests with ' + result.id + ' ' + err + ' ' + code ) ;
 
-						// set active project Id in storage
-						var jsonObject = { value: result.id } ;
-						var json = JSON.stringify( jsonObject ) ;
-						Api.call('POST', '/storage/activeProject', jsonObject, req.api.session, function (result, err, code) {
-				
-							if( result && result.status === 'ok' ) {
-								console.log( 'Lance fbr stored activeProject ' + json + ' with ' + result + ' ' + err + ' ' + code ) ;
-							} else {
-								console.log( 'Lance fbr failed to store activeProject ' + json + ' with ' + result + ' ' + err + ' ' + code ) ;
-							}
-												
-						});
+					// set active project Id in storage
+					var jsonObject = { value: result.id } ;
+					var json = JSON.stringify( jsonObject ) ;
+					Api.call('POST', '/storage/activeProject', jsonObject, req.api.session, function (result, err, code) {
+			
+						if( result && result.status === 'ok' ) {
+							console.log( 'Lance fbr stored activeProject ' + json + ' with ' + result + ' ' + err + ' ' + code ) ;
+						} else {
+							console.log( 'Lance fbr failed to store activeProject ' + json + ' with ' + result + ' ' + err + ' ' + code ) ;
+						}
+											
+					});
 
-					} else {
-						console.log( 'Lance fbr failed with ' + err + ' ' + code ) ;
-					}
-				});
-			}
+				} else {
+					console.log( 'Lance fbr did not find any requests to process with ' + err + ' ' + code ) ;
+				}
+			});
+
 		}
 		
-        next();
-
-	} else if (req.api.profile && fbsr && req.api.profile.facebook && /*fbsr.user_id &&*/ req.api.profile.facebook !== fbsr.user_id) {
-
-		console.log( 'Lance facebook redirecting to /relogin ' ) ;
-		res.api.redirect = '/relogin';
         next();
 
 	} else if( req.api.profile ) {

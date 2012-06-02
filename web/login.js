@@ -340,7 +340,8 @@ exports.auth = function (req, res, next) {
                     scope: 'email',
                     redirect_uri: Config.host.uri('web', req) + '/auth/facebook',	// added req context for domain/host,  -Lance.
                     state: Utils.getRandomString(22),
-                    display: req.api.agent.os === 'iPhone' ? 'touch' : 'page'
+                    // page is no good for embedded db app as it's in a nested iframe: display: req.api.agent.os === 'iPhone' ? 'touch' : 'page'
+                    display: req.api.agent.os === 'iPhone' ? 'touch' : 'popup'
                 }
             };
 

@@ -13,6 +13,7 @@ var Session = require('./session');
 var Routes = require('./routes');
 var Suggestions = require('./suggestions');
 var Tips = require('./tips');
+var Vault = require('./vault');
 
 
 // Declare internals
@@ -59,7 +60,8 @@ Hapi.Process.initialize({
 
     name: Config.product.name + ' API Server',
     process: Config.process.api,
-    email: Config.email
+    email: Config.email,
+    log: Config.log
 });
 
 var configuration = {
@@ -77,7 +79,16 @@ var configuration = {
 
     authentication: {
 
-        loadSessionFunc: Session.load
+        loadClientFunc: Session.loadClient,
+        loadUserFunc: Session.loadUser,
+        extensionFunc: Session.extensionGrant,
+        checkAuthorizationFunc: Session.checkAuthorization,
+
+        aes256Keys: {
+
+            oauthRefresh: Vault.oauthRefresh.aes256Key,
+            oauthToken: Vault.oauthToken.aes256Key
+        }
     },
 
     // Extension points
@@ -88,7 +99,8 @@ var configuration = {
     }
 };
 
-var server = Hapi.Server.create(Config.host.api.domain, Config.host.api.port, configuration, Routes.endpoints);
+var server = new Hapi.Server.Server(Config.host.api.domain, Config.host.api.port, configuration, Routes.endpoints);
+
 
 // Initialize database connection
 
@@ -104,7 +116,7 @@ Db.initialize(function (err) {
         // Start Server
 
         server.start();
-        Stream.initialize(server.getExpress());
+        Stream.initialize(server.listener);
         Hapi.Process.finalize();
     }
     else {

@@ -244,8 +244,8 @@ exports.put = function (request, reply) {
 	// Lance added the hostname to keep track of which app/site this project was created from
 	// replace www. prefix, .port#, .com or whatever suffix
 	// var hostname = request.headers.host.replace( /www./, '' ).replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ;
-	// var hostname = request.xxx.hostname ;
-	// project.domain = hostname ;
+	var hostname = request.server.settings.host ;
+	project.domain = hostname ;
 
     Db.insert('project', project, function (items, err) {
 
@@ -429,7 +429,7 @@ exports.participants = function (request, reply) {
 
 				// var hostname = request.headers.host.replace( /www./, '' ).replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ;
 				// var hostname = request.query.hostname && request.query.hostname.replace( /www./, '' ).replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ;
-				// var hostname = request.xxx.hostname ;
+				var hostname = request.server.settings.host ;
 
                 if (project) {
 
@@ -443,7 +443,7 @@ exports.participants = function (request, reply) {
                             var participant = { 
 								facebookId: request.payload.facebookIds[i], 
 								display: request.payload.facebookIds[i], 
-								// domain: hostname, 
+								domain: hostname, 
 								shareType: request.payload.shareType
 							};
                             change.$pushAll.participants.push(participant);
@@ -1594,11 +1594,11 @@ exports.unsortedFacebookRequestList = function (facebookId, callback) {
 
 exports.fbr = function (request, reply) {
 	
-	internals.fbr( request.userId, request.query.fbid, reply/*, request.xxx.hostname*/ ) ;
+	internals.fbr( request.userId, request.query.fbid, reply, request.server.settings.host ) ;
 
 };
 
-internals.fbr = function (userId, facebookId, reply/*, hostname*/) {
+internals.fbr = function (userId, facebookId, reply, hostname) {
 
     Db.query('project', { 'participants.facebookId': facebookId }, function (projects, err) {
 
@@ -1631,8 +1631,8 @@ internals.fbr = function (userId, facebookId, reply/*, hostname*/) {
 
 						var participant = project.participants[p] ;
                         if (participant.facebookId &&
-                            participant.facebookId === facebookId /* &&
-							( !hostname || !participant.domain || participant.domain === hostname ) */ ) {
+                            participant.facebookId === facebookId &&
+							( !hostname || !participant.domain || participant.domain === hostname ) ) {
 
 							if( participant.shareType === 'copy' ) {
 								numRequests++ ;

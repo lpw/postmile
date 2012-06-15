@@ -42,7 +42,7 @@ exports.endpoints = [
 
     { method: 'GET',    path: '/projects',                      handler: Project.list },
     { method: 'POST',   path: '/projects/fbr',                  handler: Project.fbr,	query: ['fbid'] },	// now that facebook isn't passing request_ids query parameter to us, we have to find them on our own,  -Lance.
-    { method: 'GET',    path: '/project/:id/:fbid?',            handler: Project.get },	// todo: query instead; schema not available w GET (could instead load from db on server) schema: Project.type.getFacebook },	// need getFacebook for id?  -Lance.
+    { method: 'GET',    path: '/project/:id',                   handler: Project.get },
     { method: 'POST',   path: '/project/:id',                   handler: Project.post,          query: ['position'], schema: Project.type.post },
     { method: 'PUT',    path: '/project',                       handler: Project.put,           schema: Project.type.put },
     { method: 'DELETE', path: '/project/:id',                   handler: Project.del },

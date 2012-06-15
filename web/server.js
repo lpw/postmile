@@ -197,14 +197,25 @@ internals.preprocessRequest = function (req, res, next) {
 				// use different html views depending on host reference,  -Lance.
 				// req.api.profile.view = req.api.profile.view || '/view/' + req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) + '-min.html' ;
 				// req.api.profile.view = req.api.profile.view || '/view/' + req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) + '-min.html' ;
+				var env = { 
+					hostname: req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' )
+				}
+				var mobile = false ;
+				if (req.api.agent.os === 'iPhone' ) {	// && res.api.view.hasMobile) {
+					mobile = true ;
+				}
+				// mobile = true ;	// dev
+				env[ 'mobile' ] = mobile ;
+				for( var a=2; a<process.argv.length; a++ ) {
+					env[ process.argv[ a ] ] = true ;
+				}
+				// var template = mobile ? '../../clients/view/mlist' : '../../clients/view/list' ;
+				var template = '../../clients/view/list' ;
 				req.api.profile.view = { 
-					template: '../../clients/view/list', 
+					// template: '../../clients/view/list', 
+					template: template,
 					locals: { 
-						env: { 
-							hostname: req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ),
-							// debug: req.query.debug
-							debug: process.argv[2] === 'debug'
-						}
+						env: env
 					}
 				};
 

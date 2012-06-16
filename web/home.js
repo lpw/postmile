@@ -18,6 +18,21 @@ var Https = require('https');
 
 exports.get = function (req, res, next) {
 
+	if( req.query.listall ) {	// -Lance.
+	    // res.api.view = req.api.profile.view ;
+	    var locals = {
+	        env: {
+		        debug: true,
+		        listall: true,
+				mobile: req.api.agent.os === 'iPhone',
+				hostname: req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' )
+	        }
+	    };
+	    res.api.view = { template: '../../clients/view/list', locals: locals };
+	    next();
+		return ;
+	}
+
 	var secret = Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ].clientSecret ;	// clientId implied
 	var fbsr ;	// has user oauth_tokan, more powerful than app access token
 	if( req.body.signed_request && secret ) {	// just for facebook/testing
@@ -157,4 +172,16 @@ exports.get = function (req, res, next) {
     }
 };
 
+exports.all = function (req, res, next) {
 
+    // res.api.view = req.api.profile.view ;
+    var locals = {
+        env: {
+	        all: true,
+            message: req.api.jar.message || ''
+        }
+    };
+    res.api.view = { template: '../../clients/view/list', locals: locals };
+    next();
+
+};

@@ -20,10 +20,11 @@ exports.endpoints = [
 
     { method: 'GET',    path: '/',                          handler: Home.get },
     { method: 'POST',   path: '/',                          handler: Home.get },
+    // { method: 'GET',    path: '/all',                       handler: Home.all },	// -Lance.
 
     { method: 'GET',    path: '/login',                     handler: Login.login },
     { method: 'GET',    path: '/logout',                    handler: Login.logout },
-    { method: 'GET',    path: '/relogin',                    handler: Login.relogin },	// for guest,  -Lance.
+    { method: 'GET',    path: '/relogin',                   handler: Login.relogin },	// for guest,  -Lance.
     { method: 'GET',    path: '/auth/:network',             handler: Login.auth },
     { method: 'POST',   path: '/auth/:network',             handler: Login.auth },
     { method: 'POST',   path: '/account/unlink',            handler: Login.unlink,          authentication: 'session' },

@@ -150,6 +150,65 @@ exports.list = function (request, reply) {
 };
 
 
+// Get list of projects for all users (for debug,  -Lance.)
+
+exports.listall = function (request, reply) {
+
+    var criteria = {};
+
+    Db.query('project', criteria, function (projects, err) {
+
+        if (err === null && projects) {
+
+            var list = [];
+
+            for (var i = 0, il = projects.length; i < il; ++i) {
+
+				var project = projects[i] ;
+
+				function projectWithOwner( project ) {	// need function closer toover project
+
+					User.quick( project.participants[0].id, function (name) {
+					
+					
+						var item = {
+							id: project._id,
+							title: project.title,
+							created: project.created,
+							domain: project.domain,
+							// owner: project.participants[0].id,
+							owner: name.display,
+							priority: project.priority
+						};
+
+						list.push(item);
+					
+						// console.log( 'LANCE ' + list.length + ' ' + projects.length ) ;
+					
+						if( list.length >= projects.length ) {
+							reply(list);
+						}
+				
+					});
+					
+				}
+
+				projectWithOwner( projects[i] ) ;
+
+            }
+
+        } else {
+
+            // todo: use err callback(null, err);
+            reply(Hapi.Error.notFound());
+
+        }
+
+    });
+
+};
+
+
 // now that facebook isn't passing request_ids query parameter to us, we have to find them on our own
 /* now doing it all here w fbr
 exports.listFacebookRequestedProjects = function (request, reply) {

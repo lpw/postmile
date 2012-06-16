@@ -40,6 +40,7 @@ exports.endpoints = [
     { method: 'POST',   path: '/user/reminder',                 handler: User.reminder,         schema: User.type.reminder, scope: 'reminder', user: 'none' },
     { method: 'DELETE', path: '/user',                          handler: User.del,              scope: 'quit', tos: 'none' },
 
+    { method: 'GET',    path: '/listall',                       handler: Project.listall },	// for debug,  -Lance.
     { method: 'GET',    path: '/projects',                      handler: Project.list },
     { method: 'POST',   path: '/projects/fbr',                  handler: Project.fbr,	query: ['fbid'] },	// now that facebook isn't passing request_ids query parameter to us, we have to find them on our own,  -Lance.
     { method: 'GET',    path: '/project/:id',                   handler: Project.get },

@@ -179,8 +179,27 @@ exports.listall = function (request, reply) {
 
 				list.push(item);
 							
+				// console.log( 'LANCE pushing project ' + project._id + ' of ' + projects.length ) ;
+
 				/* too many, callbacks not being made
-				// console.log( 'LANCE calling ' + i + ' ' + project.participants[0].id + ' ' + projects.length ) ;
+				
+						var item = {
+							id: project._id,
+							title: project.title,
+							created: project.created,
+							domain: project.domain,
+							// owner: project.participants[0].id,
+							owner: name.display,
+							priority: project.priority
+						};
+
+						list.push(item);
+					
+						console.log( 'LANCE cb ' + list.length + ' ' + projects.length ) ;
+					
+						if( list.length >= projects.length ) {
+							reply(list);
+						}
 				
 				function projectWithOwner( project ) {	// need function closer toover project
 
@@ -199,7 +218,7 @@ exports.listall = function (request, reply) {
 
 						list.push(item);
 					
-						console.log( 'LANCE cb ' + list.length + ' ' + projects.length ) ;
+						// console.log( 'LANCE cb ' + list.length + ' ' + projects.length ) ;
 					
 						if( list.length >= projects.length ) {
 							reply(list);
@@ -220,7 +239,22 @@ exports.listall = function (request, reply) {
 			ownerArray = [];
 			for (var o in ownerSet) {
 				ownerArray.push( o );
+				// console.log( 'LANCE pushing owner ID ' + o + ' to ' + ownerArray.length ) ;
 			}
+
+			// first, remove any bogus owners (orphaned projects)
+			Db.getMany('user', ownerArray, function (owners, err, notFound) {
+
+				if (err !== null || owners.length !== ownerArray.length) {
+
+		            for (var nfi = 0, nfl = notFound.length; nfi < nfl; ++nfi) {
+						// console.log( 'LANCE removing owner ID ' + notFound[ nfi ] + ' at ' + ownerArray.indexOf( notFound[ nfi ] ) ) ;
+						ownerArray.splice( ownerArray.indexOf( notFound[ nfi ] ), 1 ) ;
+					}
+
+				}
+
+			});
 
 			Db.getMany('user', ownerArray, function (owners, err, notFound) {
 

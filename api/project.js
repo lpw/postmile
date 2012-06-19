@@ -166,6 +166,9 @@ exports.listall = function (request, reply) {
 
 				var project = projects[i] ;
 
+				/* too many, callbacks not being made
+				// console.log( 'LANCE calling ' + i + ' ' + project.participants[0].id + ' ' + projects.length ) ;
+				
 				function projectWithOwner( project ) {	// need function closer toover project
 
 					User.quick( project.participants[0].id, function (name) {
@@ -183,7 +186,7 @@ exports.listall = function (request, reply) {
 
 						list.push(item);
 					
-						// console.log( 'LANCE ' + list.length + ' ' + projects.length ) ;
+						console.log( 'LANCE cb ' + list.length + ' ' + projects.length ) ;
 					
 						if( list.length >= projects.length ) {
 							reply(list);
@@ -194,6 +197,23 @@ exports.listall = function (request, reply) {
 				}
 
 				projectWithOwner( projects[i] ) ;
+				*/
+
+				var item = {
+					id: project._id,
+					title: project.title,
+					created: project.created,
+					domain: project.domain,
+					owner: project.participants[0].id,
+					// owner: name.display,
+					priority: project.priority
+				};
+
+				list.push(item);
+			
+				if( list.length >= projects.length ) {
+					reply(list);
+				}
 
             }
 

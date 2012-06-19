@@ -160,12 +160,25 @@ exports.listall = function (request, reply) {
 
         if (err === null && projects) {
 
+            var ownerSet = {};	// collect as set to avoid dups
             var list = [];
 
             for (var i = 0, il = projects.length; i < il; ++i) {
 
 				var project = projects[i] ;
 
+				var item = {
+					id: project._id,
+					title: project.title,
+					created: project.created,
+					domain: project.domain,
+					owner: project.participants[0].id,
+					// owner: name.display,
+					priority: project.priority
+				};
+
+				list.push(item);
+							
 				/* too many, callbacks not being made
 				// console.log( 'LANCE calling ' + i + ' ' + project.participants[0].id + ' ' + projects.length ) ;
 				
@@ -199,23 +212,50 @@ exports.listall = function (request, reply) {
 				projectWithOwner( projects[i] ) ;
 				*/
 
-				var item = {
-					id: project._id,
-					title: project.title,
-					created: project.created,
-					domain: project.domain,
-					owner: project.participants[0].id,
-					// owner: name.display,
-					priority: project.priority
-				};
+				// owners.push( project.participants[0].id ) ;
+				ownerSet[ project.participants[0].id ] = true ;	
 
-				list.push(item);
+			}
 			
-				if( list.length >= projects.length ) {
-					reply(list);
+			ownerArray = [];
+			for (var o in ownerSet) {
+				ownerArray.push( o );
+			}
+
+			Db.getMany('user', ownerArray, function (owners, err, notFound) {
+
+				if (err === null) {
+
+					if (owners.length === ownerArray.length) {
+
+						var ownerNames = {} ;
+						for (var oi = 0, ol = owners.length; oi < ol; ++oi) {
+							var owner = owners[ oi ] ;
+							ownerNames[ owner._id ] = owner.name || owner.username || owner.email || owner._id ;
+						}
+			            
+			            for (var li = 0, ll = list.length; li < ll; ++li) {
+							
+							var project = list[li] ;
+							project.owner = ownerNames[ project.owner ] ;
+
+						}
+							
+						reply( list );
+						
+					} else {
+
+						reply(Hapi.Error.badRequest('Invalid user ID: ' + JSON.stringify(notFound)));
+
+					}
+
+				} else {
+
+					reply(err);
+
 				}
 
-            }
+			});
 
         } else {
 

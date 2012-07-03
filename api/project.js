@@ -1061,7 +1061,7 @@ exports.copy = function (request, reply) {
 internals.copy = function (projectId, userId, facebookId, reply) {
 
     // The only place allowed to request a non-writable copy for modification
-    exports.load(projectId, userId, false, function (project, member, err) {
+    exports.load(projectId, userId, false, function (project, member, err) {	// note the facebook id param after the function
 
         if (project) {
 
@@ -1070,6 +1070,7 @@ internals.copy = function (projectId, userId, facebookId, reply) {
 			// Stream.update({ object: 'project', project: project._id }, request);
 			// Stream.update({ object: 'projects', user: request.userId }, request);
 
+			// todo: what about sharing a copy with public (don't want to delete the share/incivte)
 			// update db w already-shared member
 			// var participant = { pid: member.pid, display: member.display };
 			// todo: just delete this participant
@@ -1090,64 +1091,75 @@ internals.copy = function (projectId, userId, facebookId, reply) {
 			// create new project clone but w userId as owner
 		    // project.participants = [{ id: request.userId}];
 			var oldItemId = project._id ;
+			var originShareId = project.participants[0].id ;
 			// todo: copy other project details
 			project._id = null ;
-		    project.participants = [{ id: member.id }] ;	// userId
-		
-		    Db.insert('project', project, function (items, err) {	// project
+			// project.participants = [{ id: member.id }] ;
+			project.participants = [{ id: member.id, originShareType: 'copy', originShareId: originShareId, originShareName: 'Someone' }] ;
+			// project.participants = [{ id: member.id, originShareType: 'copy', originShareId: originShareId, originShareName:  }] ;	// userId
+		    User.expandIds([ originShareId ], function (users, usersMap) {
+				var owner = usersMap[ originShareId ] ;
+				if( owner ) {
+					// project.participants = [{ id: member.id, originShareType: 'copy', originShareId: project.participants[0].id, originShareName: owner.display }] ;
+					project.participants[0].originShareName = owner.display ;
+				}
 
-		        if (err === null) {
-				
-		            // Stream.update({ object: 'projects', user: request.userId }, request);
-		            // reply({ status: 'ok', id: items[0]._id }, { created: 'project/' + items[0]._id });
-					project = items[0] ;	// for callback
+			    Db.insert('project', project, function (items, err) {	// project
 
-					// has new participants - copy details?
-				
-					// copy tasks, no details
-					// copy from Tasks.list
-				
-					// mark as copied w new id?
-				
-		            Sort.list('task', projectId, 'project', function (tasks) {
+			        if (err === null) {
 
-	                    for (var i = 0, il = tasks.length; i < il; ++i) {
+			            // Stream.update({ object: 'projects', user: request.userId }, request);
+			            // reply({ status: 'ok', id: items[0]._id }, { created: 'project/' + items[0]._id });
+						project = items[0] ;	// for callback
 
-	                        var task = tasks[i] ;
+						// has new participants - copy details?
 
-					        task.project = items[0]._id ;	// projectId;
-					        task.status = task.status || 'open';	// shouldn't be needed
-							task._id = null ;	// needs to be reset for insert
-							
-					        Db.insert('task', task, function (items, err) {
+						// copy tasks, no details
+						// copy from Tasks.list
 
-					            if (err === null) {
+						// mark as copied w new id?
 
-									console.log( 'Lance project copy - inserted task ' + items[0]._id + ' ' + tasks.length ) ;
+			            Sort.list('task', projectId, 'project', function (tasks) {
 
-					            }
-					            else {
+		                    for (var i = 0, il = tasks.length; i < il; ++i) {
 
-									console.log( 'Lance project copy - failed to insert tasks ' + err + ' ' + tasks.length ) ;
+		                        var task = tasks[i] ;
 
-					            }
-					
-					        });
+						        task.project = items[0]._id ;	// projectId;
+						        task.status = task.status || 'open';	// shouldn't be needed
+								task._id = null ;	// needs to be reset for insert
 
-						}
-						
-		            });
-					
-					console.log( 'Lance project copy succeeded from ' + oldItemId + ' to ' + items[0]._id ) ;					
-					reply && reply({ status: 'ok', id: project._id });
-				
-		        } else {
+						        Db.insert('task', task, function (items, err) {
 
-					console.log( 'Lance project load - copy failed from ' + oldItemId + ' with ' + err ) ;
-					reply && reply(err);
+						            if (err === null) {
 
-		        }
-	
+										console.log( 'Lance project copy - inserted task ' + items[0]._id + ' ' + tasks.length ) ;
+
+						            }
+						            else {
+
+										console.log( 'Lance project copy - failed to insert tasks ' + err + ' ' + tasks.length ) ;
+
+						            }
+
+						        });
+
+							}
+
+			            });
+
+						console.log( 'Lance project copy succeeded from ' + oldItemId + ' to ' + items[0]._id ) ;					
+						reply && reply({ status: 'ok', id: project._id });
+
+			        } else {
+
+						console.log( 'Lance project load - copy failed from ' + oldItemId + ' with ' + err ) ;
+						reply && reply(err);
+
+			        }
+
+			    });
+
 		    });
 	    
 		} else {
@@ -1395,6 +1407,13 @@ exports.participantsList = function (project, callback) {
                 // Registered user participant
 
                 participant = usersMap[project.participants[i].id];
+
+				// Lance added for sharing:
+				// originShareType: 'copy', originShareId: project.participants[0].id, originShareName
+				participant.originShareType = project.participants[i].originShareType ;
+				participant.originShareId = project.participants[i].originShareId ;
+				participant.originShareName = project.participants[i].originShareName ;
+
             }
             else if (project.participants[i].pid) {
 

@@ -206,6 +206,7 @@ internals.preprocessRequest = function (req, res, next) {
 				}
 				// mobile = true ;	// dev
 				env[ 'mobile' ] = mobile ;
+				env[ 'secure' ] = Config.process.web.tls ? true : false ;
 				for( var a=2; a<process.argv.length; a++ ) {
 					env[ process.argv[ a ] ] = true ;
 				}

@@ -1408,11 +1408,13 @@ exports.participantsList = function (project, callback) {
 
                 participant = usersMap[project.participants[i].id];
 
-				// Lance added for sharing:
-				// originShareType: 'copy', originShareId: project.participants[0].id, originShareName
+		// Lance added for sharing:
+		// originShareType: 'copy', originShareId: project.participants[0].id, originShareName
+		if( participant ) {
 				participant.originShareType = project.participants[i].originShareType ;
 				participant.originShareId = project.participants[i].originShareId ;
 				participant.originShareName = project.participants[i].originShareName ;
+		}
 
             }
             else if (project.participants[i].pid) {

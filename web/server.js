@@ -200,16 +200,30 @@ internals.preprocessRequest = function (req, res, next) {
 				var env = { 
 					hostname: req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' )
 				}
+				
 				var mobile = false ;
 				if (req.api.agent.os === 'iPhone' ) {	// && res.api.view.hasMobile) {
 					mobile = true ;
 				}
-				// mobile = true ;	// dev
+				if (req.query.mobile ) {	// === 'iPhone' ) {
+					mobile = true ;
+				}
+				// todo: put listall in here (from home.js)?
 				env[ 'mobile' ] = mobile ;
+				
+				var debug = false ;
+				if (req.query.debug ) {
+					debug = true ;
+					env[ 'debug' ] = debug ;
+				}
+				// env[ 'debug' ] = debug ;
+
 				env[ 'secure' ] = Config.process.web.tls ? true : false ;
+				
 				for( var a=2; a<process.argv.length; a++ ) {
 					env[ process.argv[ a ] ] = true ;
 				}
+				
 				// var template = mobile ? '../../clients/view/mlist' : '../../clients/view/list' ;
 				var template = '../../clients/view/list' ;
 				req.api.profile.view = { 

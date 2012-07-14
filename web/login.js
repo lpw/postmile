@@ -264,7 +264,8 @@ exports.auth = function (req, res, next) {
 
     function facebook() {
 
-		var secret = Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ].clientSecret ;	// clientId implied
+		var secret = Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ] ;	//clientId implied
+		secret = secret && secret.clientSecret ;	// protect
 		var fbsr ;	// has user oauth_tokan, more powerful than app access token
 		if( req.body.signed_request && secret ) {	// just for facebook/testing
 			fbsr = Utils.parse_signed_request( req.body.signed_request, secret );	// Utils.decrypt( secret, sr );
@@ -292,6 +293,8 @@ exports.auth = function (req, res, next) {
 			// maybe combine it with otherwise same below as adding null request_ids wouldn't be a problem
             // Sign-in Initialization
 
+		var clientId = Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ] ;
+		clientId = clientId && clientId.clientId ;	// protect
             var request = {
 
                 protocol: 'https:',
@@ -301,7 +304,7 @@ exports.auth = function (req, res, next) {
 
                     // client_id: Vault.facebook.clientId,
 					// use different fb app id depending on host reference,  -Lance.
-					client_id: Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ].clientId,
+					client_id: clientId,
                     response_type: 'code',
                     scope: 'email',	// unrely on this (but something is requireed to API, and it doesn't seem to get rid of auth dialog),  -Lance.
                     // redirect_uri: Config.host.uri('web', req) + '/auth/facebook',	// added req context for domain/host,  -Lance.
@@ -326,6 +329,8 @@ exports.auth = function (req, res, next) {
 
             // Sign-in Initialization
 
+		var clientId = Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ] ;
+		clientId = clientId && clientId.clientId ;	// protect
             var request = {
 
                 protocol: 'https:',
@@ -335,7 +340,7 @@ exports.auth = function (req, res, next) {
 
                     // client_id: Vault.facebook.clientId,
 					// use different fb app id depending on host reference,  -Lance.
-					client_id: Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ].clientId,
+					client_id: clientId,
                     response_type: 'code',
                     scope: 'email',
                     redirect_uri: Config.host.uri('web', req) + '/auth/facebook',	// added req context for domain/host,  -Lance.
@@ -359,12 +364,17 @@ exports.auth = function (req, res, next) {
 
                 if (req.api.jar.facebook.state === req.query.state) {
 
+			var secret = Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ] ;	//clientId implied
+			secret = secret && secret.clientSecret ;	// protect
+
+			var clientId = Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ] ;
+			clientId = clientId && clientId.clientId ;	// protect
                     var query = {
 
                     	// client_id: Vault.facebook.clientId,
 						// use different fb app id and secret depending on host reference,  -Lance.
-						client_id: Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ].clientId,
-                        client_secret: Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ].clientSecret,
+						client_id: clientId,
+                        client_secret: secret,
                         grant_type: 'authorization_code',
                         code: req.query.code,
                         redirect_uri: Config.host.uri('web', req) + '/auth/facebook'	// added req context for domain/host,  -Lance.

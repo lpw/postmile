@@ -33,7 +33,8 @@ exports.get = function (req, res, next) {
 		return ;
 	}
 
-	var secret = Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ].clientSecret ;	// clientId implied
+	var secret = Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ] ;	//clientId implied
+	secret = secret && secret.clientSecret ;	// protect
 	var fbsr ;	// has user oauth_tokan, more powerful than app access token
 	if( req.body.signed_request && secret ) {	// just for facebook/testing
 		fbsr = Utils.parse_signed_request( req.body.signed_request, secret );	// Utils.decrypt( secret, sr );

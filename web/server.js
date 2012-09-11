@@ -201,7 +201,7 @@ internals.preprocessRequest = function (req, res, next) {
 					hostname: req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' )
 				}
 				var mobile = false ;
-				if (req.api.agent.os === 'iPhone' ) {	// && res.api.view.hasMobile) {
+				if ( ( req.api.agent.os === 'iPhone' || req.api.agent.os === 'iPad' ) ) {	// && res.api.view.hasMobile) {
 					mobile = true ;
 				}
 				// mobile = true ;	// dev
@@ -468,7 +468,7 @@ internals.finalizeResponse = function (req, res) {
 
         // Set mobile environment
 
-        if (req.api.agent.os === 'iPhone' &&
+        if ( ( req.api.agent.os === 'iPhone' || req.api.agent.os === 'iPad' ) &&
             res.api.view.hasMobile) {
 
             locals.layout = 'mobile';

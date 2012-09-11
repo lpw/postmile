@@ -24,7 +24,7 @@ exports.get = function (req, res, next) {
 	        env: {
 		        debug: true,
 		        listall: true,
-				mobile: req.api.agent.os === 'iPhone',
+				mobile: ( req.api.agent.os === 'iPhone' || req.api.agent.os === 'iPad' ),
 				hostname: req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' )
 	        }
 	    };

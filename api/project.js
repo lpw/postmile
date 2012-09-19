@@ -139,8 +139,26 @@ exports.list = function (request, reply) {
                     }
                 }
 
-                reply(list);
+                // wait for checkAndLoadSamples: reply(list);
             });
+
+			// put in sample lists here if none
+			// if( projects.length <= 0 )
+			// if( !internals.checkForSamples( projects ) ) 
+			function checkAndLoadSamplesReply( sampleProjects ) {
+				console.log( 'Project.list replying w ' + list.length + ' and now ' + ( sampleProjects && sampleProjects.length ) ) ;
+				for (var i = 0 ; sampleProjects && i < sampleProjects.length; ++i) {
+					var item = {
+						id: sampleProjects[i]._id,
+						title: sampleProjects[i].title,
+						priority: sampleProjects[i].priority	// -Lance.
+					};
+					list.push(item);
+				}
+				reply( list ) ;
+			}
+			internals.checkAndLoadSamples( request, projects, checkAndLoadSamplesReply ) ;
+
         }
         else {
 
@@ -1268,9 +1286,10 @@ exports.load = function (projectId, userId, isWritable, callback, facebookId) {
 				// todo: calc facebookId
 				// L look in some precedence order, member, public, copy, link, etc.?
 				// N put !item.participants[i].facebook in above userId check?
-                if (item.participants[i].facebookId &&
+                if( (item.participants[i].facebookId &&
 					facebookId &&
-                    item.participants[i].facebookId === facebookId) {
+                    item.participants[i].facebookId === facebookId) 
+					|| item.participants[i].facebookId === 'public' ) {
 
                     member = item.participants[i];
 					// update member with userId
@@ -1768,21 +1787,30 @@ exports.unsortedFacebookRequestList = function (facebookId, callback) {
 
 exports.fbr = function (request, reply) {
 	
-	internals.fbr( request.userId, request.query.fbid, reply, request.server.settings.host ) ;
+    Db.query('project', { 'participants.facebookId': request.query.fbid }, function (projects, err) {
+
+		if( err === null ) {
+			
+			internals.fbr( projects, request.userId, request.query.fbid, reply, request.server.settings.host ) ;
+
+        } else {
+
+            reply && reply(err);
+
+        }
+
+    });
 
 };
 
-internals.fbr = function (userId, facebookId, reply, hostname) {
-
-    Db.query('project', { 'participants.facebookId': facebookId }, function (projects, err) {
-
-        if (err === null) {
+internals.fbr = function (projects, userId, facebookId, reply, hostname) {
 
             if (projects.length > 0) {
 
                 // var owner = [];
                 // var notOwner = [];
 
+				// find and process all the share requests
 				// this is all so we can reply to the last share request (instead of the first) which is probably most recent, prob a better way
 				var waitToReply = true ;
 				var numRequests = 0 ;
@@ -1804,9 +1832,10 @@ internals.fbr = function (userId, facebookId, reply, hostname) {
                     for (var p = 0, pl = project.participants.length; p < pl; ++p) {
 
 						var participant = project.participants[p] ;
-                        if (participant.facebookId &&
+                        if( (participant.facebookId &&
                             participant.facebookId === facebookId &&
-							( !hostname || !participant.domain || participant.domain === hostname ) ) {
+							( !hostname || !participant.domain || participant.domain === hostname ) )
+							|| participant.facebookId === 'public' ) {
 
 							if( participant.shareType === 'copy' ) {
 								numRequests++ ;
@@ -1842,12 +1871,7 @@ internals.fbr = function (userId, facebookId, reply, hostname) {
 
             	reply && reply(Hapi.Error.notFound());
             }
-        }
-        else {
 
-            reply && reply(err);
-        }
-    });
 };
 
 
@@ -1875,4 +1899,66 @@ exports.delEmpty = function (projectId, callback) {
     });
 };
 
+
+// put in sample lists here
+
+internals.checkAndLoadSamples = function( request, projects, reply ) {
+	
+	var samples = [
+		{ title: 'Sample List', id: '5059609f25ced7000000000b' },
+		// { title: 'Hi!', id: '5052c4adc7f6862ed50000cc' }
+	] ;
+	var sampleProjectArray = [] ;
+
+console.log( 'checkAndLoadSamples: looking at ' + samples.length + ' samples ' ) ;
+	for( var s = 0, sl = samples.length; s < sl; ++s ) {
+
+		var found = 0 ;
+		
+console.log( 'checkAndLoadSamples: looking for ' + projects.length + ' projects for ' + samples[ s ].title ) ;
+		for( var p = 0, pl = projects.length; p < pl && found <= 0; ++p ) {
+
+console.log( 'checkAndLoadSamples: comparing ' + projects[ p ].title + ' project to sample ' + samples[ s ].title ) ;
+			if( projects[ p ].title === samples[ s ].title ) {
+			
+				found++ ;
+				
+			}
+			
+		}
+		
+console.log( 'checkAndLoadSamples: found sample ' + samples[ s ].title + ' ' + found ) ;
+		if( found <= 0 ) {	
+			// internals.copy( samples[ s ].id, request.userId, request.query.fbid,  ) ;
+			sampleProjectArray.push( samples[ s ].id ) ;			
+		}
+		
+	}
+
+console.log( 'checkAndLoadSamples: calling Db.getMany w ' + sampleProjectArray.length ) ;
+    Db.getMany('project', sampleProjectArray, function (sampleProjects, err, notFound) {
+	
+		function checkAndLoadSamplesReply( result ) {
+console.log( 'checkAndLoadSamples: checkAndLoadSamplesReply ' + ( result && result.status ) ) ;
+			if( result && result.status === 'ok' /*&& result.id*/ ) {
+				reply( sampleProjects ) ;
+			} else {
+				reply( null ) ;
+			}
+		}
+
+		if (err === null && sampleProjects.length === sampleProjectArray.length) {
+			
+console.log( 'checkAndLoadSamples: calling internals.fbr w ' + sampleProjects.length ) ;
+			internals.fbr( sampleProjects, request.userId, request.query.fbid, checkAndLoadSamplesReply ) ;
+
+        } else {
+
+			console.log( 'checkAndLoadSamples: getMany failed ' + err ) ;
+			
+        }
+
+    });
+		
+}
 

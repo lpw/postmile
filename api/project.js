@@ -146,14 +146,17 @@ exports.list = function (request, reply) {
 			// if( projects.length <= 0 )
 			// if( !internals.checkForSamples( projects ) ) 
 			function checkAndLoadSamplesReply( sampleProjects ) {
-				console.log( 'Project.list replying w ' + list.length + ' and now ' + ( sampleProjects && sampleProjects.length ) ) ;
+				console.log( 'Project.list replying w ' + list.length + ' and now ' ) ;
+				// console.log( 'Project.list replying w ' + list.length + ' and now ' + ( sampleProjects && sampleProjects.length ) + ' w agent ' + request.api.agent.os ) ;
 				for (var i = 0 ; sampleProjects && i < sampleProjects.length; ++i) {
 					var item = {
 						id: sampleProjects[i]._id,
 						title: sampleProjects[i].title,
 						priority: sampleProjects[i].priority	// -Lance.
 					};
-					list.push(item);
+					// if( sampleProjects[i].title !== 'Tips and Hints' || ( request.api.agent.os === 'iPhone' || request.api.agent.os === 'iPad' ) ) {	// don't add the tutorial list to anything but iOS
+						list.push(item);
+					// }
 				}
 				reply( list ) ;
 			}
@@ -1905,7 +1908,9 @@ exports.delEmpty = function (projectId, callback) {
 internals.checkAndLoadSamples = function( request, projects, reply ) {
 	
 	var samples = [
-		{ title: 'Sample List', id: '5059609f25ced7000000000b' },
+		{ title: 'Sample List', id: '505a4bf0172ffeb95e000142' },
+		{ title: 'Tips and Hints', id: '505a4c99172ffeb95e000148' },
+		// { title: 'Tips and Hints (desktop web)', id: '505a4c99172ffeb95e000148' },
 		// { title: 'Hi!', id: '5052c4adc7f6862ed50000cc' }
 	] ;
 	var sampleProjectArray = [] ;
@@ -1928,7 +1933,8 @@ console.log( 'checkAndLoadSamples: comparing ' + projects[ p ].title + ' project
 		}
 		
 console.log( 'checkAndLoadSamples: found sample ' + samples[ s ].title + ' ' + found ) ;
-		if( found <= 0 ) {	
+		if( found <= 0
+				&& ( projects.length <= 0 || samples[ s ].title !== 'Sample List' ) ) {	// don't add a sample list if there's already lists
 			// internals.copy( samples[ s ].id, request.userId, request.query.fbid,  ) ;
 			sampleProjectArray.push( samples[ s ].id ) ;			
 		}

@@ -1909,7 +1909,8 @@ internals.checkAndLoadSamples = function( request, projects, reply ) {
 	
 	var samples = [
 		{ title: 'Sample List', id: '505a4bf0172ffeb95e000142' },
-		{ title: 'Tips and Hints', id: '505a4c99172ffeb95e000148' },
+		{ title: 'Tips and Hints (swipe right to open)', id: '505a4c99172ffeb95e000148' },
+		// extra one made before I understood they won't render per client code: { title: 'Tips and Hints (swipe right to open)', id: '505a689e7ad4d1764900000f' },
 		// { title: 'Tips and Hints (desktop web)', id: '505a4c99172ffeb95e000148' },
 		// { title: 'Hi!', id: '5052c4adc7f6862ed50000cc' }
 	] ;
@@ -1924,15 +1925,16 @@ console.log( 'checkAndLoadSamples: looking for ' + projects.length + ' projects 
 		for( var p = 0, pl = projects.length; p < pl && found <= 0; ++p ) {
 
 console.log( 'checkAndLoadSamples: comparing ' + projects[ p ].title + ' project to sample ' + samples[ s ].title ) ;
-			if( projects[ p ].title === samples[ s ].title ) {
+			if( projects[ p ].title == samples[ s ].title ) {
 			
 				found++ ;
 				
 			}
+console.log( 'checkAndLoadSamples: compared ' + found ) ;
 			
 		}
 		
-console.log( 'checkAndLoadSamples: found sample ' + samples[ s ].title + ' ' + found ) ;
+console.log( 'checkAndLoadSamples: status of sample ' + samples[ s ].title + ' ' + found ) ;
 		if( found <= 0
 				&& ( projects.length <= 0 || samples[ s ].title !== 'Sample List' ) ) {	// don't add a sample list if there's already lists
 			// internals.copy( samples[ s ].id, request.userId, request.query.fbid,  ) ;

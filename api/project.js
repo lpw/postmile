@@ -1916,25 +1916,25 @@ internals.checkAndLoadSamples = function( request, projects, reply ) {
 	] ;
 	var sampleProjectArray = [] ;
 
-console.log( 'checkAndLoadSamples: looking at ' + samples.length + ' samples ' ) ;
+// console.log( 'checkAndLoadSamples: looking at ' + samples.length + ' samples ' ) ;
 	for( var s = 0, sl = samples.length; s < sl; ++s ) {
 
 		var found = 0 ;
 		
-console.log( 'checkAndLoadSamples: looking for ' + projects.length + ' projects for ' + samples[ s ].title ) ;
+// console.log( 'checkAndLoadSamples: looking for ' + projects.length + ' projects for ' + samples[ s ].title ) ;
 		for( var p = 0, pl = projects.length; p < pl && found <= 0; ++p ) {
 
-console.log( 'checkAndLoadSamples: comparing ' + projects[ p ].title + ' project to sample ' + samples[ s ].title ) ;
+// console.log( 'checkAndLoadSamples: comparing ' + projects[ p ].title + ' project to sample ' + samples[ s ].title ) ;
 			if( projects[ p ].title == samples[ s ].title ) {
 			
 				found++ ;
 				
 			}
-console.log( 'checkAndLoadSamples: compared ' + found ) ;
+// console.log( 'checkAndLoadSamples: compared ' + found ) ;
 			
 		}
 		
-console.log( 'checkAndLoadSamples: status of sample ' + samples[ s ].title + ' ' + found ) ;
+// console.log( 'checkAndLoadSamples: status of sample ' + samples[ s ].title + ' ' + found ) ;
 		if( found <= 0
 				&& ( projects.length <= 0 || samples[ s ].title !== 'Sample List' ) ) {	// don't add a sample list if there's already lists
 			// internals.copy( samples[ s ].id, request.userId, request.query.fbid,  ) ;
@@ -1943,11 +1943,11 @@ console.log( 'checkAndLoadSamples: status of sample ' + samples[ s ].title + ' '
 		
 	}
 
-console.log( 'checkAndLoadSamples: calling Db.getMany w ' + sampleProjectArray.length ) ;
+// console.log( 'checkAndLoadSamples: calling Db.getMany w ' + sampleProjectArray.length ) ;
     Db.getMany('project', sampleProjectArray, function (sampleProjects, err, notFound) {
 	
 		function checkAndLoadSamplesReply( result ) {
-console.log( 'checkAndLoadSamples: checkAndLoadSamplesReply ' + ( result && result.status ) ) ;
+// console.log( 'checkAndLoadSamples: checkAndLoadSamplesReply ' + ( result && result.status ) ) ;
 			if( result && result.status === 'ok' /*&& result.id*/ ) {
 				reply( sampleProjects ) ;
 			} else {
@@ -1957,12 +1957,13 @@ console.log( 'checkAndLoadSamples: checkAndLoadSamplesReply ' + ( result && resu
 
 		if (err === null && sampleProjects.length === sampleProjectArray.length) {
 			
-console.log( 'checkAndLoadSamples: calling internals.fbr w ' + sampleProjects.length ) ;
+// console.log( 'checkAndLoadSamples: calling internals.fbr w ' + sampleProjects.length ) ;
 			internals.fbr( sampleProjects, request.userId, request.query.fbid, checkAndLoadSamplesReply ) ;
 
         } else {
 
 			console.log( 'checkAndLoadSamples: getMany failed ' + err ) ;
+			reply( null ) ;
 			
         }
 

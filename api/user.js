@@ -871,6 +871,10 @@ exports.put = function (request, reply) {
 
                         sendWelcome(items[0]);
                     }
+
+				// put in sample lists here
+				// they will be put in when we GET request to load projects: Project.checkAndLoadSamples( request ) ;
+
                 }
                 else {
 

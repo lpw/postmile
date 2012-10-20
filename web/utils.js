@@ -273,7 +273,7 @@ exports.processFacebookAppRequests = function (rids, token, uid, session) {
 				// global.activeProjectId = jsonData;
 				// Y.list.list.getAndGoToActiveList() ;
 			
-				if( jsonData.type === 'link' || jsonData.type === 'copy' ) {
+				if( jsonData.type === 'link' || jsonData.type === 'copy' ) {	// change to 'shareType' to match param in api participants request protocol
 				
 					console.log( 'Lance facebook doing ' + jsonData.type + ' now...' ) ;
 				

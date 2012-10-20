@@ -14,6 +14,31 @@ var QueryString = require('querystring');
 var Vault = require('./vault');
 var Https = require('https');
 
+// Get cache.manifest
+
+exports.cacheManifest = function (req, res, next) {
+	var result = 'CACHE MANIFEST\n' ;
+	result += '# v3\n' ;
+	result += '\n' ;
+	result += 'CACHE:\n' ;
+	result += '/view/css/combo-mstyle-min.css\n' ;
+	result += '/view/yui/yui-deps.js\n' ;
+	result += '/view/js/mobile-combo-10.1.3.125-min.js\n' ;
+	result += '/view/css/images/check2b_24_24x24.png\n' ;
+	result += '/view/css/images/close-icon2.png\n' ;
+	result += '/view/css/images/list4c_28x24.png\n' ;
+	result += '/view/css/images/loading.gif\n' ;
+	result += '/view/css/images/backarrow7_28x28.png\n' ;
+	result += '\n' ;
+	result += 'NETWORK:\n' ;
+	result += '*\n' ;
+	result += '\n' ;
+	result += 'FALLBACK:\n' ;
+	result += '\n' ;
+    res.api.result = result ;
+    next();
+}
+
 // Get home page
 
 exports.get = function (req, res, next) {

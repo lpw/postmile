@@ -18,6 +18,8 @@ var Tos = require('./tos');
 
 exports.endpoints = [
 
+    { method: 'GET',    path: '/cache.manifest',            handler: Home.cacheManifest },
+
     { method: 'GET',    path: '/',                          handler: Home.get },
     { method: 'POST',   path: '/',                          handler: Home.get },
     // { method: 'GET',    path: '/all',                       handler: Home.all },	// -Lance.

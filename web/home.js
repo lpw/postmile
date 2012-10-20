@@ -18,12 +18,13 @@ var Https = require('https');
 
 exports.cacheManifest = function (req, res, next) {
 	var result = 'CACHE MANIFEST\n' ;
+	var hostname = req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ;
 	result += '# v3\n' ;
 	result += '\n' ;
 	result += 'CACHE:\n' ;
 	result += '/view/css/combo-mstyle-min.css\n' ;
 	result += '/view/yui/yui-deps.js\n' ;
-	result += '/view/js/mobile-combo-10.1.3.125-min.js\n' ;
+	result += '/view/js/mobile-combo-' + hostname + '-min.js\n' ;
 	result += '/view/css/images/check2b_24_24x24.png\n' ;
 	result += '/view/css/images/close-icon2.png\n' ;
 	result += '/view/css/images/list4c_28x24.png\n' ;

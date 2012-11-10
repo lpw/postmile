@@ -315,8 +315,8 @@ exports.processFacebookAppRequests = function (rids, token, uid, session) {
 				console.log( 'Lance facebook req failed w ' + jsonData ) ;
 			}
 	
-			// delete request
-			if (data && data.id) {
+			// nah, delete request
+			if (false && data && data.id) {
 								
 				exports.facebookRequest('DELETE', '/' + data.id + '?' + QueryString.stringify({ oauth_token: /*data.access_token*//*fbsr.oauth_token*/token }), null, function (data, err) {	// body null or ''/' '?
 

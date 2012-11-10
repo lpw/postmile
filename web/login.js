@@ -295,9 +295,12 @@ exports.auth = function (req, res, next) {
 
 		var clientId = Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ] ;
 		clientId = clientId && clientId.clientId ;	// protect
+        var fromFacebook = req.headers.referer && req.headers.referer.indexOf( 'apps.facebook.com' ) ;  // has to be apps, otherwise confusion with perms dialog from www.facebook.com
+        var redirectUri = fromFacebook ? ( Config.host.web.scheme + '://apps.facebook.com/' + clientId ) : ( Config.host.uri('web', req) + '/auth/facebook' ) ;
+
             var request = {
 
-                protocol: 'https:',
+                protocol: Config.host.web.scheme,   // 'https:',
                 host: 'graph.facebook.com',
                 pathname: '/oauth/authorize',
                 query: {
@@ -312,7 +315,7 @@ exports.auth = function (req, res, next) {
                     // redirect_uri: Config.host.uri('web', req) + '/auth/facebook' + req.url,	// /?request_ids=xxx...
                     // redirect_uri: Config.host.uri('web', req) + '/auth/facebook'  + '?' + req.url.split('?')[1],	// perhaps ok w ? instead of /? 
                     // redirect_uri: Config.host.uri('web', req) + '/auth/facebook'  + '?' + encodeURIComponent( req.url.split('?')[1] ),	// how bout encoded
-                    redirect_uri: Config.host.uri('web', req) + '/auth/facebook',	// just go back to regular, and put rids in state
+                    redirect_uri: redirectUri,	// just go back to regular, and put rids in state
                     // put ride here instead,  -Lance: state: Utils.getRandomString(22),
 					state: req.url.split('?')[1],
                     // page is no good for embedded db app as it's in a nested iframe: display: req.api.agent.os === 'iPhone' ? 'touch' : 'page'
@@ -320,9 +323,22 @@ exports.auth = function (req, res, next) {
                 }
             };
 
+            // Instead of 303 redirect to, have view template do js top.window.href = url
+            // ensure auth works for new users (and old) and well as post-ops going to fb insted of app
             res.api.jar.facebook = { state: request.query.state };
-            res.api.redirect = Url.format(request);
-            res.api.result = 'You are being redirected to Facebook to sign-in...';
+            // res.api.redirect = Url.format(request);
+            // res.api.result = 'You are being redirected to Facebook to sign-in...';
+            var locals = {
+                env: {
+                        // debug: true,
+                        // listall: true,
+                        mobile: ( req.api.agent.os === 'iPhone' || req.api.agent.os === 'iPad' ),
+                        hostname: req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ),
+                        referer: req.headers.referer,
+                        loginRedirectUrl: Url.format(request)
+                }
+            };
+            res.api.view = { template: '../../clients/view/listr', locals: locals };
             next();
 
 		} else if (req.query.code === undefined) {
@@ -331,9 +347,12 @@ exports.auth = function (req, res, next) {
 
 		var clientId = Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ] ;
 		clientId = clientId && clientId.clientId ;	// protect
+        var fromFacebook = req.headers.referer && req.headers.referer.indexOf( 'apps.facebook.com' ) ;  // has to be apps, otherwise confusion with perms dialog from www.facebook.com
+        var redirectUri = fromFacebook ? ( Config.host.web.scheme + '://apps.facebook.com/' + clientId ) : ( Config.host.uri('web', req) + '/auth/facebook' ) ;
+
             var request = {
 
-                protocol: 'https:',
+                protocol: Config.host.web.scheme,   // 'https:',
                 host: 'graph.facebook.com',
                 pathname: '/oauth/authorize',
                 query: {
@@ -343,7 +362,7 @@ exports.auth = function (req, res, next) {
 					client_id: clientId,
                     response_type: 'code',
                     scope: 'email',
-                    redirect_uri: Config.host.uri('web', req) + '/auth/facebook',	// added req context for domain/host,  -Lance.
+                    redirect_uri: redirectUri,	// added req context for domain/host,  -Lance.
                     state: Utils.getRandomString(22),
                     // page is no good for embedded db app as it's in a nested iframe: display: req.api.agent.os === 'iPhone' ? 'touch' : 'page'
                     display: ( req.api.agent.os === 'iPhone' || req.api.agent.os === 'iPad' ) ? 'touch' : 'popup'
@@ -351,8 +370,19 @@ exports.auth = function (req, res, next) {
             };
 
             res.api.jar.facebook = { state: request.query.state };
-            res.api.redirect = Url.format(request);
-            res.api.result = 'You are being redirected to Facebook to sign-in...';
+            // res.api.redirect = Url.format(request);
+            // res.api.result = 'You are being redirected to Facebook to sign-in...';
+            var locals = {
+                env: {
+                        // debug: true,
+                        // listall: true,
+                        mobile: ( req.api.agent.os === 'iPhone' || req.api.agent.os === 'iPad' ),
+                        hostname: req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ),
+                        referer: req.headers.referer,
+                        loginRedirectUrl: Url.format(request)
+                }
+            };
+            res.api.view = { template: '../../clients/view/listr', locals: locals };
             next();
         }
         else {

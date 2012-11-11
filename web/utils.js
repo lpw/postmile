@@ -278,7 +278,7 @@ exports.processFacebookAppRequests = function (rids, token, uid, session) {
 					console.log( 'Lance facebook doing ' + jsonData.type + ' now...' ) ;
 				
 					// Api.clientCall('POST', '/project/' + jsonData.src + '/' + jsonData.type, '', function (result, err, code) {
-					Api.call('POST', '/project/' + jsonData.src + '/' + jsonData.type + '/?fbid=' + /*fbsr.user_id*/uid, '', /*req.api.*/session, function (result, err, code) {
+					Api.call('POST', '/project/' + jsonData.src + '/' + jsonData.type + '?fbid=' + /*fbsr.user_id*/uid, '', /*req.api.*/session, function (result, err, code) {
 					
 						if( result && result.status === 'ok' && result.id ) {
 
@@ -301,7 +301,7 @@ exports.processFacebookAppRequests = function (rids, token, uid, session) {
 						
 						} else {
 						
-							console.log( 'Lance facebook failed to ' + jsonData.type + ' of ' +  jsonData.src + ' with ' + result + ' ' + err + ' ' + code ) ;
+							console.log( 'Lance facebook failed to ' + jsonData.type + ' ' +  jsonData.src + ' with ' + result + ' ' + err + ' ' + code ) ;
 					
 						}
 					
@@ -315,10 +315,11 @@ exports.processFacebookAppRequests = function (rids, token, uid, session) {
 				console.log( 'Lance facebook req failed w ' + jsonData ) ;
 			}
 	
-			// nah, delete request
-			if (false && data && data.id) {
+			// delete request - nah, don't
+			/*
+			if (data && data.id) {
 								
-				exports.facebookRequest('DELETE', '/' + data.id + '?' + QueryString.stringify({ oauth_token: /*data.access_token*//*fbsr.oauth_token*/token }), null, function (data, err) {	// body null or ''/' '?
+				exports.facebookRequest('DELETE', '/' + data.id + '?' + QueryString.stringify({ oauth_token: //data.access_token.//.fbsr.oauth_token./token }), null, function (data, err) {	// body null or ''/' '?
 
 					console.log( 'Lance facebook deleted request ' + data.id + ' ' + data + ' ' + err ) ;
 
@@ -327,6 +328,7 @@ exports.processFacebookAppRequests = function (rids, token, uid, session) {
 			} else {
 				console.log( 'Lance facebook delete req failed without data.id ' + data ) ;
 			}
+			*/
 		
 			// set active project Id in storage
 					

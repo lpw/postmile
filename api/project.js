@@ -1099,15 +1099,20 @@ internals.copy = function (projectId, userId, facebookId, reply) {
 			member.shareType = '' ;	// null ok?
 			// member.display = '' ;	// null ok?
 			// member.id = '' ;	// null ok?
-			Db.updateCriteria('project', projectId, { 'participants.facebookId': facebookId }, { $set: { 'participants.$': /*member*/{} } }, function (err) {
-				if (err === null) {
-					console.log( 'Lance project copy deshared ok ' ) ;
-					// reply && reply({ status: 'ok', id: project._id });
-				} else {
-					console.log( 'Lance project copy deshared failed with err: ' + err ) ;
-					// reply && reply(err);
-				}
-			});
+            try {
+    			Db.updateCriteria('project', projectId, { 'participants.facebookId': facebookId }, { $set: { 'participants.$': /*member*/{} } }, function (err) {
+    				if (err === null) {
+    					console.log( 'Lance project copy deshared ok ' ) ;
+    					// reply && reply({ status: 'ok', id: project._id });
+    				} else {
+    					console.log( 'Lance project copy deshared failed with err: ' + err ) ;
+    					// reply && reply(err);
+    				}
+    			});
+            } catch( err ) {
+                console.log( 'Lance project copy doc update failed: ' + err ) ;
+                reply && reply('Db update failed (proj prob already copied)');                
+            }
 
 			// create new project clone but w userId as owner
 		    // project.participants = [{ id: request.userId}];
@@ -1231,21 +1236,26 @@ internals.link = function (projectId, userId, facebookId, reply) {
 			member.facebookId = '' ;	// null ok?
 			member.shareType = '' ;	// null ok?
 			// member.display = ?
-			Db.updateCriteria('project', projectId, { 'participants.facebookId': facebookId }, { $set: { 'participants.$': member } }, function (err) {
+            try {                
+    			Db.updateCriteria('project', projectId, { 'participants.facebookId': facebookId }, { $set: { 'participants.$': member } }, function (err) {
 
-				if (err === null) {
-					
-					console.log( 'Lance project link ok ' ) ;
-					reply && reply({ status: 'ok', id: project._id });
-					
-				} else {
-					
-					console.log( 'Lance project link failed with err: ' + err ) ;
-					reply && reply(err);
-					
-				}
+    				if (err === null) {
+    					
+    					console.log( 'Lance project link ok ' ) ;
+    					reply && reply({ status: 'ok', id: project._id });
+    					
+    				} else {
+    					
+    					console.log( 'Lance project link failed with err: ' + err ) ;
+    					reply && reply(err);
+    					
+    				}
 
-			});
+    			});
+            } catch( err ) {
+                console.log( 'Lance project link doc update failed: ' + err ) ;
+                reply && reply('Db update failed (proj prob already linked)');                
+            }
 	    
 		} else {
 			

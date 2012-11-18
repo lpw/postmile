@@ -22,6 +22,7 @@ exports.cacheManifest = function (req, res, next) {
 	result += '# v3\n' ;
 	result += '\n' ;
 	result += 'CACHE:\n' ;
+	result += '/favicon.ico\n' ;
 	result += '/view/css/combo-mstyle-min.css\n' ;
 	result += '/view/yui/yui-deps.js\n' ;
 	result += '/view/js/mobile-combo-' + hostname + '-min.js\n' ;

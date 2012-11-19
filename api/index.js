@@ -99,6 +99,9 @@ var configuration = {
     }
 };
 
+// Lance added tls for ssl here
+configuration.tls = Config.process.api.tls ;
+
 var server = new Hapi.Server.Server(Config.host.api.domain, Config.host.api.port, configuration, Routes.endpoints);
 
 

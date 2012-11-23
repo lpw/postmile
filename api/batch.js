@@ -225,7 +225,7 @@ internals.call = function (method, path, content, arg1, arg2) {   // session, ca
 
     if (session) {
 
-        authorization = MAC.getAuthorizationHeader(method, path, Config.host.api.domain, Config.host.api.port, session);
+        authorization = MAC.getAuthorizationHeader(method, path, Config.host.api.domain, Config.host.api.insecureport, session);
 
         if (authorization === null ||
             authorization === '') {
@@ -234,7 +234,7 @@ internals.call = function (method, path, content, arg1, arg2) {   // session, ca
         }
     }
 
-    var hreq = Http.request({ host: Config.host.api.domain, port: Config.host.api.port, path: path, method: method }, function (hres) {
+    var hreq = Http.request({ host: Config.host.api.domain, port: Config.host.api.insecureport, path: path, method: method }, function (hres) {
 
         if (hres) {
 

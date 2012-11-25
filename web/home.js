@@ -93,6 +93,19 @@ exports.get = function (req, res, next) {
         // res.api.redirect = req.api.profile.view ;
 		// todo: what about request_id's ?
         res.api.view = req.api.profile.view ;
+        /* was moving to replace line above bc pulled from way above to get local.env: 
+	    var locals = {
+	        env: {
+		        debug: true,
+		        listall: true,
+				mobile: ( req.api.agent.os === 'iPhone' || req.api.agent.os === 'iPad' ),
+				*/
+				//hostname: req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' )
+				/*
+	        }
+	    };
+	    res.api.view = { template: '../../clients/view/list', locals: locals };
+	    */
 
 		// if( req.query.request_ids ) {	// fb req,  -Lance.
 			// res.api.redirect += '#r=' + req.query.request_ids ;
@@ -106,7 +119,8 @@ exports.get = function (req, res, next) {
 			Utils.processFacebookAppRequests( req.query.request_ids.split( ',' ), fbsr.oauth_token, fbsr.user_id, req.api.session ) ;
 		}
 		*/
-		if( fbsr && fbsr.oauth_token && req.query.request_ids /*we already know this from above&& req.api.profile.facebook === fbsr.user_id*/ ) {
+		/* doing this now pn api side in activeProject nka /project/actiev
+		if( fbsr && fbsr.oauth_token && req.query.request_ids ) {
 			
 			Utils.processFacebookAppRequests( req.query.request_ids.split( ',' ), fbsr.oauth_token, fbsr.user_id, req.api.session ) ;
 			
@@ -139,6 +153,7 @@ exports.get = function (req, res, next) {
 			});
 
 		}
+		*/
 		
         next();
 

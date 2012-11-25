@@ -15,6 +15,7 @@ var Task = require('./task');
 var Email = require('./email');
 var Last = require('./last');
 var Stream = require('./stream');
+var Storage = require('./storage');
 
 
 // Declare internals
@@ -321,6 +322,107 @@ exports.listall = function (request, reply) {
 
     });
 
+};
+
+
+// Get the shared list/project or the last-stored project, -Lance.
+
+exports.active = function (request, reply) {
+
+    /* giving up on parsing request id's
+     * as it's too hard to get the host/web app 
+     * and associated client secret from the vault
+     * and parse the signed request
+     * would've next pulled in from web side: 
+     * exports.processFacebookAppRequests = function (rids, token, uid, session) {
+     * function parse_signed_request(signed_request, secret) {
+        var secret = Vault.facebook[ host ] ;   //host has to be pass in now as it's not in headers like on web side
+        secret = secret && secret.clientSecret ;    // protect
+        if( req.body.signed_request && secret ) {   // just for facebook/testing
+            fbsr = parse_signed_request( req.body.signed_request, secret );   // Utils.decrypt( secret, sr );
+        if( fbsr && fbsr.oauth_token && req.query.request_ids ) {
+            Utils.processFacebookAppRequests( req.query.request_ids.split( ',' ), fbsr.oauth_token, fbsr.user_id, req.api.session ) ;    
+    */
+
+    function fallback() {
+        request.params.id = 'activeProject' ;   // morph/reroute this current request into storage request
+        function toId( as ) {
+            as.id = as && as.activeProject ;
+            reply( as ) ;
+        }
+        Storage.get( request, toId ) ;
+    }
+    function checkReply( r ) {
+        if( r.id ) {
+            reply( r ) ;
+        } else {
+            fallback() ;
+        }
+    }
+
+    if( !request.query.request_ids && !request.query.rl ) {
+
+        // perhaps should aways go through projexts looking for unclaimed share requests
+        // but worried that getting fbid and going thru all proj/list too slow
+
+        // all's ok, just nothing to share
+        fallback() ;    // reply({ status: 'ok' });
+
+    } else if( request.query.request_ids ) {    // should only get one of request_id's or l's
+
+        if( request.query.fbid  ) {
+
+            exports.fbr( request.query.fbid, checkReply ) ;
+
+        } else {
+
+            User.load(request.userId, function (user, err) {
+
+                if (user && user.facebook) {
+
+                    request.query.fbid = user.facebook ;    // todo, for now: sim as tho it were passed in
+                    exports.fbr( request, checkReply ) ;
+
+                } else {
+
+                    fallback() ;    // reply(Hapi.Error.badRequest('no facebook id for request_ids'));
+
+                }
+
+            });
+
+        }
+        
+    } else if( request.query.rl ) {  // don't even bother checking for request.query.fbid
+
+        User.load(request.userId, function (user, err) {
+
+            if (user && user.facebook) {
+
+                Db.get('project', request.query.rl, function (project, err) {
+
+                    if( err === null && project ) {
+                        
+                        internals.fbr( [project], request.userId, user.facebook, checkReply, request.server.settings.host ) ;
+
+                    } else {
+
+                        fallback() ;    // reply && reply(err||Hapi.Error.badRequest('no such project' + request.query.rl));
+
+                    }
+
+                });
+
+            } else {
+
+                fallback() ;    // reply(Hapi.Error.badRequest('no facebook id for rl'));
+
+            }
+
+        });
+
+    }
+    
 };
 
 
@@ -1111,7 +1213,7 @@ internals.copy = function (projectId, userId, facebookId, reply) {
     			});
             } catch( err ) {
                 console.log( 'Lance project copy doc update failed: ' + err ) ;
-                reply && reply('Db update failed (proj prob already copied)');                
+                reply && reply(Hapi.Error.badRequest('Db update failed (proj prob already copied)'));                
             }
 
 			// create new project clone but w userId as owner
@@ -1231,30 +1333,63 @@ internals.link = function (projectId, userId, facebookId, reply) {
 			// clear facebookId?
 			// member.facebookId = '' ;
 
-			// update db w already-shared member
-			// var participant = { pid: member.pid, display: member.display };
-			member.facebookId = '' ;	// null ok?
-			member.shareType = '' ;	// null ok?
-			// member.display = ?
-            try {                
-    			Db.updateCriteria('project', projectId, { 'participants.facebookId': facebookId }, { $set: { 'participants.$': member } }, function (err) {
+            // if it's a public link, we need to add a new member
+            // can't just replace the public facebookId "invite" as we could if it were a private invite to a particular facebookId
+            // and we don't have to worry if it's a copy because then we'd get a whole new project as above copy code does
+            if( member.facebookId === 'public' ) {
 
-    				if (err === null) {
-    					
-    					console.log( 'Lance project link ok ' ) ;
-    					reply && reply({ status: 'ok', id: project._id });
-    					
-    				} else {
-    					
-    					console.log( 'Lance project link failed with err: ' + err ) ;
-    					reply && reply(err);
-    					
-    				}
+                // add to db w public-shared member
+                var change = { $pushAll: { participants: []} };
+                var participant = { 
+                    id: userId
+                };
+                change.$pushAll.participants.push(participant);
+                try {                
+                    Db.update('project', project._id, change, function (err) {
+                        if (err === null) {                            
+                            console.log( 'Lance project public link ok ' ) ;
+                            reply && reply({ status: 'ok', id: project._id });
+                        } else {
+                            console.log( 'Lance project public link failed with err: ' + err ) ;
+                            reply && reply(err);
+                        }
+                    });
+                } catch( err ) {
+                    console.log( 'Lance project public link doc update failed: ' + err ) ;
+                    reply && reply(Hapi.Error.badRequest('Db public update failed (proj prob already linked)'));                
+                }
 
-    			});
-            } catch( err ) {
-                console.log( 'Lance project link doc update failed: ' + err ) ;
-                reply && reply('Db update failed (proj prob already linked)');                
+            } else if( member.facebookId === facebookId ) {
+
+                // update db w already-shared member
+                // var participant = { pid: member.pid, display: member.display };
+                member.facebookId = '' ;    // null ok?
+                member.shareType = '' ; // null ok?
+                // member.display = ?
+                try {                
+                    Db.updateCriteria('project', projectId, { 'participants.facebookId': facebookId }, { $set: { 'participants.$': member } }, function (err) {
+
+                        if (err === null) {
+                            
+                            console.log( 'Lance project link ok ' ) ;
+                            reply && reply({ status: 'ok', id: project._id });
+                            
+                        } else {
+                            
+                            console.log( 'Lance project link failed with err: ' + err ) ;
+                            reply && reply(err);
+                            
+                        }
+
+                    });
+                } catch( err ) {
+                    console.log( 'Lance project link doc update failed: ' + err ) ;
+                    reply && reply(Hapi.Error.badRequest('Db update failed (proj prob already linked)'));                
+                }
+
+            } else {
+                console.log( 'Lance: Db public update failed (proj already linked: ' + err ) ;
+                reply && reply(Hapi.Error.badRequest('Db public update failed (proj already linked)'));                
             }
 	    
 		} else {
@@ -1292,6 +1427,11 @@ exports.load = function (projectId, userId, isWritable, callback, facebookId) {
 
                     break;
                 }
+
+            }
+
+            // reloop to get promote a participants match first over facebook match
+            for (var i = 0, il = item.participants.length; !member && i < il; ++i) {
 
 				// db manip was too complicated for a simple get, so simplified by adding copy and link join methods
 				// check facebook invites,  -Lance.
@@ -1797,12 +1937,12 @@ exports.unsortedFacebookRequestList = function (facebookId, callback) {
 */
 
 // now that facebook isn't passing request_ids query parameter to us, we have to find them on our own
-
+/* todo: obsolete this */
 exports.fbr = function (request, reply) {
 	
     Db.query('project', { 'participants.facebookId': request.query.fbid }, function (projects, err) {
 
-		if( err === null ) {
+		if( err === null && projects ) {
 			
 			internals.fbr( projects, request.userId, request.query.fbid, reply, request.server.settings.host ) ;
 
@@ -1818,7 +1958,7 @@ exports.fbr = function (request, reply) {
 
 internals.fbr = function (projects, userId, facebookId, reply, hostname) {
 
-            if (projects.length > 0) {
+            if (projects && projects.length > 0) {
 
                 // var owner = [];
                 // var notOwner = [];

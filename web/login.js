@@ -72,7 +72,7 @@ exports.login = function (req, res, next) {
 
             // Lance made this a bit messy with the default profile view being a jade template instead of a url: res.api.redirect = req.query.next || req.api.profile.view;
 			if( res.query.next ) {
-				res.api.redirect = req.query.next ;
+				res.api.redirect = req.query.next ; // should include query params
 			} else {
 				res.api.view = req.api.profile.view ;
 			}
@@ -285,7 +285,7 @@ exports.auth = function (req, res, next) {
 
             finalizedLogin(account);
 
-		} else if (req.query.code === undefined && req.query.request_ids ) {	//  && fbsr && !fbsr.user_id) {
+		} else if (false && req.query.code === undefined && req.query.request_ids ) {	//  && fbsr && !fbsr.user_id) { obsolete
 
             // the app doesn't yet have permission, so reissue login request
             // just like we're going to get a code below, except add /?request_ids=xxx... to redierct_url
@@ -295,8 +295,17 @@ exports.auth = function (req, res, next) {
 
 		var clientId = Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ] ;
 		clientId = clientId && clientId.clientId ;	// protect
-        var fromFacebook = req.headers.referer && req.headers.referer.indexOf( 'apps.facebook.com' ) ;  // has to be apps, otherwise confusion with perms dialog from www.facebook.com
+        var fromFacebook = req.headers.referer && req.headers.referer.indexOf( 'apps.facebook.com' ) ;  // has to be apps, otherwise confusion with perms dialog from www.facebook.com (tho note that this might also come from fbauth if first-time user just approved app)
+        // fb doesn;t like /auth/facebook, should redirect ok: var redirectUri = fromFacebook ? ( Config.host.web.scheme + '://apps.facebook.com/' + clientId + '/auth/facebook' ) : ( Config.host.uri('web', req) + '/auth/facebook' ) ;
+        // works but no fb ref: var redirectUri = ( Config.host.uri('web', req) + '/auth/facebook' ) ;
         var redirectUri = fromFacebook ? ( Config.host.web.scheme + '://apps.facebook.com/' + clientId ) : ( Config.host.uri('web', req) + '/auth/facebook' ) ;
+        // capture and keep the query params throughout the login process
+        /* hope not: fb just strips them away - need to put it in state 
+        var qp = req.url && req.url.split('?')[1] ;
+        if( qp ) {   // not just '/'
+            redirectUri += '?' + qp ;
+        }
+        */
 
             var request = {
 
@@ -347,8 +356,19 @@ exports.auth = function (req, res, next) {
 
 		var clientId = Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ] ;
 		clientId = clientId && clientId.clientId ;	// protect
-        var fromFacebook = req.headers.referer && req.headers.referer.indexOf( 'apps.facebook.com' ) ;  // has to be apps, otherwise confusion with perms dialog from www.facebook.com
+        var fromFacebook = req.headers.referer && req.headers.referer.indexOf( 'apps.facebook.com' ) ;  // has to be apps, otherwise confusion with perms dialog from www.facebook.com (tho note that this might also come from fbauth if first-time user just approved app)
+        // fb doesn;t like /auth/facebook, should redirect ok: var redirectUri = fromFacebook ? ( Config.host.web.scheme + '://apps.facebook.com/' + clientId + '/auth/facebook' ) : ( Config.host.uri('web', req) + '/auth/facebook' ) ;
+        // works but no fb ref: var redirectUri = ( Config.host.uri('web', req) + '/auth/facebook' ) ;
         var redirectUri = fromFacebook ? ( Config.host.web.scheme + '://apps.facebook.com/' + clientId ) : ( Config.host.uri('web', req) + '/auth/facebook' ) ;
+        // debug: var redirectUri = ( Config.host.uri('web', req) + '/auth/facebook' ) ;
+        // capture and keep the query params throughout the login process
+        /* hope not: fb just strips them away - need to put it in state 
+        var qp = req.url && req.url.split('?')[1] ;
+        if( qp ) {   // not just '/'
+            redirectUri += '?' + qp ;
+        }
+        */
+        var qp = req.url && req.url.split('?')[1] ;
 
             var request = {
 
@@ -363,7 +383,9 @@ exports.auth = function (req, res, next) {
                     response_type: 'code',
                     scope: 'email',
                     redirect_uri: redirectUri,	// added req context for domain/host,  -Lance.
-                    state: Utils.getRandomString(22),
+                    // state: Utils.getRandomString(22), // make this into useful query params
+                    state: '?' + ( qp ? qp + '&rand=' : 'rand=' ) + Utils.getRandomString(22), // make this into useful query params
+                    // seems to be ignored rl: req.query.rl,
                     // page is no good for embedded db app as it's in a nested iframe: display: req.api.agent.os === 'iPhone' ? 'touch' : 'page'
                     display: ( req.api.agent.os === 'iPhone' || req.api.agent.os === 'iPad' ) ? 'touch' : 'popup'
                 }
@@ -407,7 +429,7 @@ exports.auth = function (req, res, next) {
                         client_secret: secret,
                         grant_type: 'authorization_code',
                         code: req.query.code,
-                        redirect_uri: Config.host.uri('web', req) + '/auth/facebook'	// added req context for domain/host,  -Lance.
+                        redirect_uri: Config.host.uri('web', req) + '/auth/facebook'    // added req context for domain/host,  -Lance.
                     };
 
                     var body = QueryString.stringify(query);
@@ -716,7 +738,7 @@ exports.auth = function (req, res, next) {
 				*/
 				} else {
 					console.log( 'already linked ' ) ;
-					res.api.redirect = '/' ;	
+					res.api.redirect = '/' + '?' + req.url.split('?')[1] ;	
 					next() ;
 				}
 
@@ -733,6 +755,15 @@ exports.auth = function (req, res, next) {
             };
 
             var destination = req.api.jar.auth ? req.api.jar.auth.next : null;
+            // redirect_uri: Config.host.uri('web', req) + '/auth/facebook' // added req context for domain/host,  -Lance.
+            // ensuring above state matches
+            // pull out any qp we had to encode in state instead of qp
+            // and put it back in qp
+            // try to get this back in since FB oauth didn't allow it in refirect_uri/next
+            // just pass it into loginCall: destination += ( destination.indexOf('?')<0?'?':'&' ) + req.query.state ;    
+            // var qp = req.query.state ;   can't get it into query params thru fb oauth
+            var qp = req.api && req.api.jar && req.api.jar.facebook && req.api.jar.facebook.state || '' ;
+
             // for callback and req,  -Lance exports.loginCall(tokenRequest, res, next, destination, account);
 			function doCallbackAndNext(){ 
 				if( callback ) {
@@ -740,7 +771,7 @@ exports.auth = function (req, res, next) {
 				}
 				next(); 
 			}
-            exports.loginCall(tokenRequest, res, doCallbackAndNext, destination, account, req);
+            exports.loginCall(tokenRequest, res, doCallbackAndNext, destination, account, req, qp ) ;
         }
     }
 
@@ -758,13 +789,13 @@ exports.unlink = function (req, res, next) {
 
         Api.clientCall('DELETE', '/user/' + req.api.profile.id + '/link/' + req.body.network, '', function (result, err, code) {
 
-            res.api.redirect = '/account/linked';
+            res.api.redirect = '/account/linked' + '?' + req.url.split('?')[1] ;
             next();
         });
     }
     else {
 
-        res.api.redirect = '/account/linked';
+        res.api.redirect = '/account/linked' + '?' + req.url.split('?')[1] ;
         next();
     }
 };
@@ -780,13 +811,13 @@ exports.emailToken = function (req, res, next) {
         x_email_token: req.params.token
     };
 
-    exports.loginCall(tokenRequest, res, next, null, null);
+    exports.loginCall(tokenRequest, res, next, null, null, req, null);
 };
 
 
 // Login common function
 
-exports.loginCall = function (tokenRequest, res, next, destination, account, req) {	// Lance added req
+exports.loginCall = function (tokenRequest, res, next, destination, account, req, qp) {	// Lance added req, qp
 
     tokenRequest.client_id = 'postmile.view';
     tokenRequest.client_secret = '';
@@ -839,7 +870,7 @@ exports.loginCall = function (tokenRequest, res, next, destination, account, req
 
                                 // destination = '/tos';	// should now be up-to-date and go to view
                                 // destination = '/view';	now we're just rendering a root template
-                                destination = '/';
+                                destination = '/' ;
 
                                 break;
                         }
@@ -875,7 +906,7 @@ exports.loginCall = function (tokenRequest, res, next, destination, account, req
 										// res.api.redirect = '/tos' + (req.body.next ? '?next=' + encodeURIComponent(req.body.next) : '');
 										console.log( 'TOS refresh 2 ' + ( req.api.session === session ) + ' ' + req.api.session + ' ' + session ) ;
 										req.api.session = session;
-		                        		res.api.redirect = '/';
+		                        		res.api.redirect = '/' + qp ;   // '?' + req.url.split('?')[1] ;
 										next();
 									});
 								});
@@ -887,7 +918,8 @@ exports.loginCall = function (tokenRequest, res, next, destination, account, req
                     }
                     else {
 
-                        res.api.redirect = destination || '/';
+                        res.api.redirect = destination || '/' ;
+                        res.api.redirect += qp ;    // '?' + req.url.split('?')[1] ;
                         next();
                     }
                 }
@@ -907,7 +939,7 @@ exports.loginCall = function (tokenRequest, res, next, destination, account, req
             if (tokenRequest.grant_type === 'http://ns.postmile.net/email') {
 
                 res.api.jar.message = err.error_description;
-                res.api.redirect = '/';
+                res.api.redirect = '/' + qp ;   // '?' + req.url.split('?')[1] ;
                 next();
             }
             else if (account) {
@@ -941,7 +973,7 @@ exports.loginCall = function (tokenRequest, res, next, destination, account, req
 
 					console.log( 'Lance PUT /user ok, calling loginCall ' ) ;
 
-				    exports.loginCall(tokenRequest, res, next, '/', account, req);	// /welcome instead of view? - just go direct for now, include account & req
+				    exports.loginCall(tokenRequest, res, next, '/', account, req, qp);	// /welcome instead of view? - just go direct for now, include account & req
 
 					console.log( 'Lance PUT /user ok after loginCall, redirecting' ) ;
 
@@ -971,7 +1003,7 @@ exports.loginCall = function (tokenRequest, res, next, destination, account, req
 			//	rather than staying in this infinite cycle (perhaps just a UI change - just ensure we are telling the UI here)
 
 			res.api.jar.signup = account;
-			res.api.redirect = '/signup/register';
+			res.api.redirect = '/signup/register' + qp ; // '?' + req.url.split('?')[1] ;  todo: make sure rout rule will still match
 			next();
 
 		}
@@ -981,7 +1013,7 @@ exports.loginCall = function (tokenRequest, res, next, destination, account, req
 
                 // Failed to login or register
 
-                res.api.redirect = '/';
+                res.api.redirect = '/' + qp ;   // '?' + req.url.split('?')[1] ;
                 next();
             }
         }

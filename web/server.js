@@ -216,6 +216,7 @@ internals.preprocessRequest = function (req, res, next) {
 					debug = true ;
 					env[ 'debug' ] = debug ;
 				}
+				// env[ 'debug' ] = true ;
 				// env[ 'debug' ] = debug ;
 
 				env[ 'secure' ] = Config.process.web.tls ? true : false ;

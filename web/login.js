@@ -91,7 +91,7 @@ exports.login = function (req, res, next) {
 
 exports.logout = function (req, res, next) {
 
-    Session.logout(res, next);
+    Session.logout(req, res, next); // Lance added req
 };
 
 

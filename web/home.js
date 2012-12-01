@@ -225,6 +225,7 @@ exports.get = function (req, res, next) {
     }
 };
 
+// I this this func is now obsolete - todo: get rid of it
 exports.all = function (req, res, next) {
 
     // res.api.view = req.api.profile.view ;

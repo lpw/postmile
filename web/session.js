@@ -137,10 +137,13 @@ exports.refresh = function (req, res, session, callback) {
 };
 
 
-exports.logout = function (res, next) {
+exports.logout = function (req, res, next) {
 
     exports.clear(res);
-    res.api.redirect = '/';
+    // Lance added bit of hostname logic for custom landing page base don req hostname res.api.redirect = '/';
+    var hostname = req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ;
+    var redirectLocation = Vault.facebook[hostname] && Vault.facebook[hostname].landingPage || 'http://facebook.com' ;
+    res.api.redirect = redirectLocation ;
     res.api.result = 'You are being redirected...';
     next();
 };

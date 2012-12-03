@@ -356,10 +356,12 @@ exports.auth = function (req, res, next) {
 
 		var clientId = Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ] ;
 		clientId = clientId && clientId.clientId ;	// protect
-        var fromFacebook = req.headers.referer && req.headers.referer.indexOf( 'apps.facebook.com' ) ;  // has to be apps, otherwise confusion with perms dialog from www.facebook.com (tho note that this might also come from fbauth if first-time user just approved app)
+        // var fromFacebook = req.headers.referer && req.headers.referer.indexOf( 'apps.facebook.com' ) ;  // has to be apps, otherwise confusion with perms dialog from www.facebook.com (tho note that this might also come from fbauth if first-time user just approved app)
         // fb doesn;t like /auth/facebook, should redirect ok: var redirectUri = fromFacebook ? ( Config.host.web.scheme + '://apps.facebook.com/' + clientId + '/auth/facebook' ) : ( Config.host.uri('web', req) + '/auth/facebook' ) ;
         // works but no fb ref: var redirectUri = ( Config.host.uri('web', req) + '/auth/facebook' ) ;
-        var redirectUri = fromFacebook ? ( Config.host.web.scheme + '://apps.facebook.com/' + clientId ) : ( Config.host.uri('web', req) + '/auth/facebook' ) ;
+        // give up on trying to redirect the top-level page just to user doesn't see fb perms req nested inside top fb page
+        // var redirectUri = fromFacebook ? ( Config.host.web.scheme + '://apps.facebook.com/' + clientId ) : ( Config.host.uri('web', req) + '/auth/facebook' ) ;
+        var redirectUri = Config.host.uri('web', req) + '/auth/facebook' ;
         // debug: var redirectUri = ( Config.host.uri('web', req) + '/auth/facebook' ) ;
         // capture and keep the query params throughout the login process
         /* hope not: fb just strips them away - need to put it in state 
@@ -392,19 +394,21 @@ exports.auth = function (req, res, next) {
             };
 
             res.api.jar.facebook = { state: request.query.state };
-            // res.api.redirect = Url.format(request);
-            // res.api.result = 'You are being redirected to Facebook to sign-in...';
+            res.api.redirect = Url.format(request);
+            res.api.result = 'You are being redirected to Facebook to sign-in...';
+            /* give up on trying to redirect the top-level page just to user doesn't see fb perms req nested inside top fb page
             var locals = {
                 env: {
                         // debug: true,
                         // listall: true,
                         mobile: ( req.api.agent.os === 'iPhone' || req.api.agent.os === 'iPad' ),
-                        hostname: req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ),
+                        hostname: req.headers.host.replace( /:.STAR/, '' ).replace( /\.[A-z]+$/, '' ),
                         referer: req.headers.referer,
                         loginRedirectUrl: Url.format(request)
                 }
             };
             res.api.view = { template: '../../clients/view/listr', locals: locals };
+            */
             next();
         }
         else {

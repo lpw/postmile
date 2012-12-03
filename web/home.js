@@ -19,7 +19,7 @@ var Https = require('https');
 exports.cacheManifest = function (req, res, next) {
 	var result = 'CACHE MANIFEST\n' ;
 	var hostname = req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ;
-	result += '# v7\n' ;
+	result += '# v12\n' ;
 	result += '\n' ;
 	result += 'CACHE:\n' ;
 	result += '/favicon.ico\n' ;
@@ -48,6 +48,7 @@ exports.cacheManifest = function (req, res, next) {
 	result += 'FALLBACK:\n' ;
 	result += '\n' ;
     res.api.result = result ;
+    res.setHeader('Content-Type', 'text/cache-manifest') ;
     next();
 }
 

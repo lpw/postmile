@@ -356,7 +356,8 @@ exports.auth = function (req, res, next) {
 
 		var clientId = Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ] ;
 		clientId = clientId && clientId.clientId ;	// protect
-        // var fromFacebook = req.headers.referer && req.headers.referer.indexOf( 'apps.facebook.com' ) ;  // has to be apps, otherwise confusion with perms dialog from www.facebook.com (tho note that this might also come from fbauth if first-time user just approved app)
+        var fromFacebook = req.headers.referer && req.headers.referer.indexOf( 'apps.facebook.com' ) ;  // has to be apps, otherwise confusion with perms dialog from www.facebook.com (tho note that this might also come from fbauth if first-time user just approved app)
+        // var fromFacebook = req.query.iframed ;  // has to be apps, otherwise confusion with perms dialog from www.facebook.com (tho note that this might also come from fbauth if first-time user just approved app)
         // fb doesn;t like /auth/facebook, should redirect ok: var redirectUri = fromFacebook ? ( Config.host.web.scheme + '://apps.facebook.com/' + clientId + '/auth/facebook' ) : ( Config.host.uri('web', req) + '/auth/facebook' ) ;
         // works but no fb ref: var redirectUri = ( Config.host.uri('web', req) + '/auth/facebook' ) ;
         // give up on trying to redirect the top-level page just to user doesn't see fb perms req nested inside top fb page
@@ -371,6 +372,9 @@ exports.auth = function (req, res, next) {
         }
         */
         var qp = req.url && req.url.split('?')[1] ;
+        if( fromFacebook)  {
+            qp = qp ? qp+'&iframe=1' : 'iframe=1' ;
+        }
 
             var request = {
 
@@ -394,21 +398,24 @@ exports.auth = function (req, res, next) {
             };
 
             res.api.jar.facebook = { state: request.query.state };
-            res.api.redirect = Url.format(request);
-            res.api.result = 'You are being redirected to Facebook to sign-in...';
-            /* give up on trying to redirect the top-level page just to user doesn't see fb perms req nested inside top fb page
+            // res.api.redirect = Url.format(request);
+            // res.api.result = 'You are being redirected to Facebook to sign-in...';
+            // give up on trying to redirect the top-level page just to user doesn't see fb perms req nested inside top fb page
+            // but we have to, because embedding fb perms presents the user w a "Go to Facebook" link
+            // ugh, how is a developer supposed to do this?
+            // knowing if we're at the top level, we could just do a redirect
+            // and only use listr to get toplevel redirect from fb iframe when otherwise needed
             var locals = {
                 env: {
                         // debug: true,
                         // listall: true,
                         mobile: ( req.api.agent.os === 'iPhone' || req.api.agent.os === 'iPad' ),
-                        hostname: req.headers.host.replace( /:.STAR/, '' ).replace( /\.[A-z]+$/, '' ),
+                        hostname: req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ),
                         referer: req.headers.referer,
                         loginRedirectUrl: Url.format(request)
                 }
             };
             res.api.view = { template: '../../clients/view/listr', locals: locals };
-            */
             next();
         }
         else {
@@ -911,10 +918,20 @@ exports.loginCall = function (tokenRequest, res, next, destination, account, req
 										console.log( 'TOS refresh 2 ' + ( req.api.session === session ) + ' ' + req.api.session + ' ' + session ) ;
 										req.api.session = session;
 		                        		res.api.redirect = '/' + qp ;   // '?' + req.url.split('?')[1] ;
+                                        if( req.query.state && req.query.state.indexOf( 'iframed=1' ) >= 0 ) {   // assume fb
+                                            var clientId = Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ] ;
+                                            clientId = clientId && clientId.clientId ;  // protect
+                                            res.api.redirect = Config.host.web.scheme + '://apps.facebook.com/' + clientId + res.api.redirect ;
+                                        }
 										next();
 									});
 								});
 							} else {
+                                 if( req.query.state && req.query.state.indexOf( 'iframed=1' ) >= 0 ) {   // assume fb
+                                    var clientId = Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ] ;
+                                    clientId = clientId && clientId.clientId ;  // protect
+                                    res.api.redirect = Config.host.web.scheme + '://apps.facebook.com/' + clientId /* + res.api.redirect */ ;
+                                }
 								next() ;
 							}
 						});
@@ -924,6 +941,11 @@ exports.loginCall = function (tokenRequest, res, next, destination, account, req
 
                         res.api.redirect = destination || '/' ;
                         res.api.redirect += qp ;    // '?' + req.url.split('?')[1] ;
+                        if( req.query.state && req.query.state.indexOf( 'iframed=1' ) >= 0 ) {   // assume fb
+                            var clientId = Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ] ;
+                            clientId = clientId && clientId.clientId ;  // protect
+                            res.api.redirect = Config.host.web.scheme + '://apps.facebook.com/' + clientId + res.api.redirect ;
+                        }
                         next();
                     }
                 }
@@ -944,6 +966,11 @@ exports.loginCall = function (tokenRequest, res, next, destination, account, req
 
                 res.api.jar.message = err.error_description;
                 res.api.redirect = '/' + qp ;   // '?' + req.url.split('?')[1] ;
+                if( req.query.state && req.query.state.indexOf( 'iframed=1' ) >= 0 ) {   // assume fb
+                    var clientId = Vault.facebook[ req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ] ;
+                    clientId = clientId && clientId.clientId ;  // protect
+                    res.api.redirect = Config.host.web.scheme + '://apps.facebook.com/' + clientId + res.api.redirect ;
+                }
                 next();
             }
             else if (account) {
@@ -998,6 +1025,7 @@ exports.loginCall = function (tokenRequest, res, next, destination, account, req
 
 		} else {
 
+            /*
 			// now we're just giong direct to login, skip signup, tos
 			// by allowing any and all above
 			res.xxx() ;	// fail
@@ -1008,6 +1036,8 @@ exports.loginCall = function (tokenRequest, res, next, destination, account, req
 
 			res.api.jar.signup = account;
 			res.api.redirect = '/signup/register' + qp ; // '?' + req.url.split('?')[1] ;  todo: make sure rout rule will still match
+            */
+            res.api.redirect = 'http://facebook.com' ;  // total fail
 			next();
 
 		}
@@ -1018,6 +1048,14 @@ exports.loginCall = function (tokenRequest, res, next, destination, account, req
                 // Failed to login or register
 
                 res.api.redirect = '/' + qp ;   // '?' + req.url.split('?')[1] ;
+                // not sure we should redirect down into fb app if we're on an error
+                /* this should never happen, and if it does, do not go to fb app
+                if( req.query.state && req.query.state.indexOf( 'iframed=1' ) >= 0 ) {   // assume fb
+                    var clientId = Vault.facebook[ req.headers.host.replace( /:.STAR/, '' ).replace( /\.[A-z]+$/, '' ) ] ;
+                    clientId = clientId && clientId.clientId ;  // protect
+                    res.api.redirect = Config.host.web.scheme + '://apps.facebook.com/' + clientId + res.api.redirect ;
+                }
+                */
                 next();
             }
         }

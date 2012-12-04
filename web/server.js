@@ -477,6 +477,11 @@ internals.finalizeResponse = function (req, res) {
             twitter: Vault.twitter[hostname] && Vault.twitter[hostname].clientName || hostname, 
             yahoo: Vault.yahoo[hostname] && Vault.yahoo[hostname].clientName || hostname
         };
+        locals.authPicture = { 
+            facebook: Vault.facebook[hostname] && Vault.facebook[hostname].clientPicture, 
+            twitter: Vault.twitter[hostname] && Vault.twitter[hostname].clientPicture, 
+            yahoo: Vault.yahoo[hostname] && Vault.yahoo[hostname].clientPicture
+        };
         locals.product = Config.product;
 
         // Add crumb

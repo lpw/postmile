@@ -373,7 +373,7 @@ exports.auth = function (req, res, next) {
         */
         var qp = req.url && req.url.split('?')[1] ;
         if( fromFacebook)  {
-            qp = qp ? qp+'&iframe=1' : 'iframe=1' ;
+            qp = qp ? qp+'&iframed=1' : 'iframe=1' ;
         }
 
             var request = {

@@ -17,9 +17,9 @@ var Https = require('https');
 // Get cache.manifest
 
 exports.cacheManifest = function (req, res, next) {
-	var result = 'CACHE MANIFEST\n' ;
+	var result = 'XXXCACHE MANIFEST\n' ;
 	var hostname = req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ;
-	result += '# v12\n' ;
+	result += '# v17\n' ;
 	result += '\n' ;
 	result += 'CACHE:\n' ;
 	result += '/favicon.ico\n' ;

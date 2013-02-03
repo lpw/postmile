@@ -163,7 +163,8 @@ internals.preprocessRequest = function (req, res, next) {
                 // Check version
 
                 isNotWithStupid = ((req.api.agent.name === 'chrome' && Semver.satisfies(version, '>= 11.x.x')) ||
-                                   (req.api.agent.name === 'safari' && Semver.satisfies(version, '>= 5.x.x')) ||
+                                   // (req.api.agent.name === 'safari' && Semver.satisfies(version, '>= 5.x.x')) ||
+                                   (req.api.agent.name === 'safari' && Semver.satisfies(version, '>= 4.x.x')) ||	// for droid
                                    (req.api.agent.name === 'firefox' && Semver.satisfies(version, '>= 4.x.x')) ||
                                    // (req.api.agent.name === 'msie' && Semver.satisfies(version, '>= 8.x.x')) ||
 									false );
@@ -202,7 +203,9 @@ internals.preprocessRequest = function (req, res, next) {
 				}
 				
 				var mobile = false ;
-				if ( ( req.api.agent.os === 'iPhone' || req.api.agent.os === 'iPad' ) ) {	// && res.api.view.hasMobile) {
+				// if ( ( req.api.agent.os === 'iPhone' || req.api.agent.os === 'iPad' ) ) {	// && res.api.view.hasMobile) {
+				// if ( ( req.api.agent.os === 'iPhone' || req.api.agent.os === 'iPad'  || req.api.agent.os === 'Linux' ) ) {	// && res.api.view.hasMobile) {
+				if ( ( req.api.agent.os === 'iPhone' || req.api.agent.os === 'iPad'  ) || req.api.agent.full.indexOf( 'droid' ) >= 0 ) {	// && res.api.view.hasMobile) {
 					mobile = true ;
 				}
 				if (req.query.mobile ) {	// === 'iPhone' ) {
@@ -493,7 +496,8 @@ internals.finalizeResponse = function (req, res) {
 
         // Set mobile environment
 
-        if ( ( req.api.agent.os === 'iPhone' || req.api.agent.os === 'iPad' ) &&
+        // if ( ( req.api.agent.os === 'iPhone' || req.api.agent.os === 'iPad' ) &&
+		if ( ( req.api.agent.os === 'iPhone' || req.api.agent.os === 'iPad' || req.api.agent.full.indexOf( 'droid' ) >= 0 ) &&
             res.api.view.hasMobile) {
 
             locals.layout = 'mobile';

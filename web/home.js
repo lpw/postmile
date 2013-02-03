@@ -31,6 +31,7 @@ exports.cacheManifest = function (req, res, next) {
 	result += '/view/css/images/list4c_28x24.png\n' ;
 	result += '/view/css/images/loading.gif\n' ;
 	result += '/view/css/images/backarrow7_28x28.png\n' ;
+	result += '/view/css/images/updownarrow_blue_32.png\n' ;
 	result += '/view/css/images/' + hostname + 'icon114.png'
 	result += '/view/css/images/' + hostname + 'icon144.png'
 	result += '/view/css/images/' + hostname + 'icon57.png'

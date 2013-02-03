@@ -212,7 +212,7 @@ internals.preprocessRequest = function (req, res, next) {
 				env[ 'mobile' ] = mobile ;
 				
 				var debug = false ;
-				if (req.query.debug ) {
+				if (req.query.debuglpw ) {
 					debug = true ;
 					env[ 'debug' ] = debug ;
 				}

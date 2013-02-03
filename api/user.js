@@ -1633,7 +1633,7 @@ internals.checkUsername = function (username, callback) {
 
                 // Maximum length
 
-                if (username.length <= 20) {
+                if (username.length <= 200) {
 
                     // Begins with a letter
 

@@ -19,7 +19,7 @@ var Https = require('https');
 exports.cacheManifest = function (req, res, next) {
 	var result = 'CACHE MANIFEST\n' ;
 	var hostname = req.headers.host.replace( /:.*/, '' ).replace( /\.[A-z]+$/, '' ) ;
-	result += '# v17\n' ;
+	result += '# v28\n' ;
 	result += '\n' ;
 	result += 'CACHE:\n' ;
 	result += '/favicon.ico\n' ;
@@ -32,10 +32,16 @@ exports.cacheManifest = function (req, res, next) {
 	result += '/view/css/images/loading.gif\n' ;
 	result += '/view/css/images/backarrow7_28x28.png\n' ;
 	result += '/view/css/images/updownarrow_blue_32.png\n' ;
+	result += '/view/css/images/people28.png\n' ;
+	result += '/view/css/images/delcomp_28x28.png\n' ;
+	result += '/view/css/images/dark_grey_home_28x28.png\n' ;
 	result += '/view/css/images/' + hostname + 'icon114.png'
 	result += '/view/css/images/' + hostname + 'icon144.png'
 	result += '/view/css/images/' + hostname + 'icon57.png'
 	result += '/view/css/images/' + hostname + 'icon72.png'
+	// facebook stuff:?
+	// xd_arbiter (x2), apprequestformerrecieients, all.js
+	// art:
 	// result += '/view/css/images/tripmestartup1496x2048.jpg'
 	// result += '/view/css/images/tripmestartup1536x2008.jpg'
 	// result += '/view/css/images/tripmestartup320x460.jpg'
